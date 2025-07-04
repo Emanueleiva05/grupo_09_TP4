@@ -10,7 +10,12 @@ type Props = {
 export default function ParkedVehiclePopup({ onClose }: Props) {
   return (
     <PopupCard>
-      <Text style={styles.title}>Vehículo estacionado</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Vehículo estacionado</Text>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Text style={styles.closeButtonText}>X</Text>
+        </TouchableOpacity>
+      </View>
 
       <Picker style={styles.picker}>
         <Picker.Item label="XXX 000" value="xxx000" />
@@ -37,7 +42,20 @@ export default function ParkedVehiclePopup({ onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   title: { color: 'white', fontSize: 16, marginBottom: 8 },
+  closeButton: {
+    padding: 4,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
   picker: {
     backgroundColor: '#2c2f33',
     color: 'white',

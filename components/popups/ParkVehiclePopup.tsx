@@ -1,16 +1,21 @@
-import { Picker } from '@react-native-picker/picker';
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import PopupCard from './PopupCard';
+import { Picker } from "@react-native-picker/picker";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import PopupCard from "./PopupCard";
 
 type Props = {
-    onClose: () => void;
+  onClose: () => void;
 };
 
 export default function ParkVehiclePopup({ onClose }: Props) {
   return (
     <PopupCard>
-      <Text style={styles.title}>Estacionar vehículo</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Estacionar vehículo</Text>
+        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Text style={styles.closeButtonText}>X</Text>
+        </TouchableOpacity>
+      </View>
 
       <Picker style={styles.picker}>
         <Picker.Item label="XXX 000" value="xxx000" />
@@ -20,7 +25,9 @@ export default function ParkVehiclePopup({ onClose }: Props) {
       <View style={styles.infoBox}>
         <Text style={styles.infoTitle}>Información de la zona</Text>
         <Text style={styles.infoText}>Ej.: zona celeste</Text>
-        <Text style={styles.infoText}>Solo permitido de lunes a sábados de 9hs hasta las 20hs</Text>
+        <Text style={styles.infoText}>
+          Solo permitido de lunes a sábados de 9hs hasta las 20hs
+        </Text>
         <Text style={styles.infoText}>Precio por hora: $100.00</Text>
       </View>
 
@@ -32,26 +39,39 @@ export default function ParkVehiclePopup({ onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
-  title: { color: 'white', fontSize: 16, marginBottom: 8 },
-  picker: {
-    backgroundColor: '#2c2f33',
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  title: { color: "white", fontSize: 16, marginBottom: 8 },
+  closeButton: {
+    padding: 4,
+  },
+  closeButtonText: {
     color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  picker: {
+    backgroundColor: "#2c2f33",
+    color: "white",
     borderRadius: 8,
     marginBottom: 12,
   },
   infoBox: {
-    backgroundColor: '#2c2f33',
+    backgroundColor: "#2c2f33",
     borderRadius: 8,
     padding: 8,
     marginBottom: 12,
   },
-  infoTitle: { color: 'white', fontWeight: 'bold', marginBottom: 4 },
-  infoText: { color: 'white', fontSize: 12 },
+  infoTitle: { color: "white", fontWeight: "bold", marginBottom: 4 },
+  infoText: { color: "white", fontSize: 12 },
   button: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: "#3b82f6",
     borderRadius: 8,
     paddingVertical: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  buttonText: { color: 'white', fontWeight: 'bold' },
+  buttonText: { color: "white", fontWeight: "bold" },
 });
