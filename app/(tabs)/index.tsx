@@ -4,7 +4,7 @@ import MapView from 'react-native-maps';
 import CarButton from '../../components/CarButton';
 import NotificationButton from '../../components/NotificationButton';
 import ParkedVehiclePopup from '../../components/popups/ParkedVehiclePopup';
-
+import { Colors } from '../../constants/Colors'; // ajustá la ruta según tu estructura
 
 export default function MapScreen() {
   const [showPopup, setShowPopup] = useState(false);
@@ -30,13 +30,15 @@ export default function MapScreen() {
           <ParkedVehiclePopup onClose={() => setShowPopup(false)} />
         </View>
       )}
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { 
+    flex: 1, 
+    backgroundColor: Colors.light.background,
+  },
   map: { flex: 1 },
   buttonCar: {
     position: 'absolute',

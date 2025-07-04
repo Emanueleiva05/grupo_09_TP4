@@ -1,11 +1,20 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { Colors } from '../constants/Colors';
 
 export default function Layout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#000',
+        tabBarActiveTintColor: Colors.light.text,
         tabBarInactiveTintColor: 'gray',
+        tabBarActiveBackgroundColor: Colors.light.tabIconSelected,
+        tabBarInactiveBackgroundColor: Colors.light.tabIconDefault,
+        tabBarStyle: {
+          backgroundColor: Colors.light.tabIconDefault, 
+          borderTopWidth: 0, 
+          elevation: 0, 
+        },
         headerShown: false,
       }}
     >
@@ -39,9 +48,6 @@ export default function Layout() {
     </Tabs>
   );
 }
-
-// Icono usando @expo/vector-icons
-import { Ionicons } from '@expo/vector-icons';
 
 function TabIcon({ name, color, size }: { name: any; color: string; size: number }) {
   return <Ionicons name={name} color={color} size={size} />;
