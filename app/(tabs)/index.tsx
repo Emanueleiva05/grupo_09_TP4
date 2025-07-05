@@ -4,7 +4,7 @@ import MapView from 'react-native-maps';
 import CarButton from '../../components/CarButton';
 import NotificationButton from '../../components/NotificationButton';
 import ParkedVehiclePopup from '../../components/popups/ParkedVehiclePopup';
-import { Colors } from '../../constants/Colors'; // ajustá la ruta según tu estructura
+import { Colors } from '../../constants/Colors'; 
 
 export default function MapScreen() {
   const [showPopup, setShowPopup] = useState(false);

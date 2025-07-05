@@ -6,6 +6,7 @@ export const Colors = {
     buttonBackground: '#435C6D',
     tabIconDefault: '#1B1E25',  // fondo inactivo
     tabIconSelected: '#1D263B', // fondo activo
+    primary:'#435C6D',
   },
   dark: {
     text: '#FFFFFF',
@@ -14,5 +15,6 @@ export const Colors = {
     buttonBackground: '#435C6D',
     tabIconDefault: '#1B1E25',
     tabIconSelected: '#1D263B',
+    primary:'#435C6D',
   },
 };

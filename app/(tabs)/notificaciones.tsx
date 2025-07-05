@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { Colors } from '../../constants/Colors'; // ajustá ruta si hace falta
+import { Colors } from '../../constants/Colors';
 
 export default function NotificacionesScreen() {
   return (
