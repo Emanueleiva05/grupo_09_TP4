@@ -2,6 +2,7 @@ export class Usuario {
     id: string;
     nombre: string;
     email: string;
+    password: string;
     rol: 'cliente' | 'admin' | 'guardia';
     autos: string[]; // patentes asociadas
   
@@ -9,11 +10,13 @@ export class Usuario {
       id: string,
       nombre: string,
       email: string,
+      password: string,
       rol: 'cliente' | 'admin' | 'guardia' = 'cliente'
     ) {
       this.id = id;
       this.nombre = nombre;
       this.email = email;
+      this.password = password;
       this.rol = rol;
       this.autos = [];
     }

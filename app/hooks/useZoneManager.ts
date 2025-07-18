@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MapPressEvent } from 'react-native-maps';
-import { Zona } from '../models/Zona';
+import { Zona } from '../../models/Zona';
 
 export function useZonaManager() {
   const [selectedPoints, setSelectedPoints] = useState<{latitude: number, longitude: number}[]>([]);

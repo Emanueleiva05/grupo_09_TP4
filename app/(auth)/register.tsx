@@ -1,20 +1,41 @@
-import React, { useState } from 'react';
-import { Image, StyleSheet, View, TouchableOpacity } from 'react-native';
-import { ThemedView } from '@/components/ThemedView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedInput } from '@/components/ThemedInput';
 import PrimaryButton from '@/components/PrimaryButton';
-import { useRouter } from 'expo-router';
+import { ThemedInput } from '@/components/ThemedInput';
+import { ThemedText } from '@/components/ThemedText';
+import { ThemedView } from '@/components/ThemedView';
+import { useAuth } from '@/context/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Checkbox from 'expo-checkbox';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import 'react-native-get-random-values'; // hace que funcione la creacion del id
+import { v4 as uuidv4 } from 'uuid';
+import Routes from '../../constants/Routes';
+import { Usuario } from '../../models/Usuario';
+
 
 export default function Register() {
   const [user, setUser] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [repeatPassword, setRepeatPassword] = useState('');
   const [isTransitStaff, setIsTransitStaff] = useState(false);
-
+  const rol = isTransitStaff ? 'guardia' : 'cliente';
   const router = useRouter();
-
+  const { register, error } = useAuth();
+  
+  const handleRegister = async () => {
+    const nuevo = new Usuario(uuidv4(), user, email, password, rol);
+    const exito = await register(nuevo);
+    const data = await AsyncStorage.getItem('usuariosRegistrados');
+    console.log(data);
+    if (!exito) {
+      Alert.alert("Error", error ?? "Error desconocido");
+    } else {
+      router.push(Routes.Home);
+    }
+  }
+  
   return (
     <ThemedView style={styles.container}>
         <Image
@@ -31,6 +52,16 @@ export default function Register() {
           onChangeText={setUser}
           autoCapitalize="none"
         />
+        
+        <ThemedText style={styles.label}>Email</ThemedText>
+        <ThemedInput
+          style={styles.input}
+          placeholder="Ej.: ejemplo@ejemplo.com"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
 
         <ThemedText style={styles.label}>Contraseña</ThemedText>
         <ThemedInput
@@ -39,6 +70,7 @@ export default function Register() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          autoCapitalize="none"
         />
 
         <ThemedText style={styles.label}>Repetir contraseña</ThemedText>
@@ -48,6 +80,7 @@ export default function Register() {
           value={repeatPassword}
           onChangeText={setRepeatPassword}
           secureTextEntry
+          autoCapitalize="none"
         />
 
         <View style={styles.checkboxContainer}>
@@ -59,7 +92,7 @@ export default function Register() {
           <ThemedText style={styles.checkboxLabel}>¿Eres personal de tránsito?</ThemedText>
         </View>
 
-        <PrimaryButton title="Crear cuenta" onPress={() => {}} style={styles.registerButton} />
+        <PrimaryButton title="CREAR CUENTA" onPress={() => handleRegister()} style={styles.registerButton} />
 
         <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
           <ThemedText style={styles.linkText}>¿Ya tenés cuenta? Iniciar sesión</ThemedText>

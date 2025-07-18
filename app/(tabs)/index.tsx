@@ -5,7 +5,7 @@ import CarButton from '../../components/CarButton';
 import NotificationButton from '../../components/NotificationButton';
 import ParkedVehiclePopup from '../../components/popups/ParkedVehiclePopup';
 import { Colors } from '../../constants/Colors';
-import { Zona } from '../models/Zona';
+import { Zona } from '../../models/Zona';
 
 
 export default function MapScreen() {

@@ -1,16 +1,27 @@
-import React, { useState } from 'react';
-import { Image, StyleSheet, View, TouchableOpacity } from 'react-native';
+import PrimaryButton from '@/components/PrimaryButton';
+import { ThemedInput } from '@/components/ThemedInput';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { ThemedInput } from '@/components/ThemedInput';
-import PrimaryButton from '@/components/PrimaryButton';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import Routes from '../../constants/Routes';
 
 export default function Login() {
-  const [user, setUser] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
+  const { login, error } = useAuth();
+
+  const handleLogin = async () => {
+    const exito = await login(email, password);
+    if (!exito) {
+      Alert.alert("Error", error ?? "Error desconocido");
+    } else {
+      router.push(Routes.Home);
+    }
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -20,12 +31,12 @@ export default function Login() {
           resizeMode="contain"
         />
 
-        <ThemedText style={styles.label}>Usuario</ThemedText>
+        <ThemedText style={styles.label}>Email</ThemedText>
         <ThemedInput
           style={styles.input}
-          placeholder="Ej.: PerezJuan"
-          value={user}
-          onChangeText={setUser}
+          placeholder="Ej.: ejemplo@ejemplo.com"
+          value={email}
+          onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
         />
@@ -36,10 +47,11 @@ export default function Login() {
           placeholder="Ej.: 1234"
           value={password}
           onChangeText={setPassword}
+          autoCapitalize="none"
           secureTextEntry
         />
 
-        <PrimaryButton title="INGRESAR" onPress={() => router.push(Routes.Home)} style={styles.loginButton} />
+        <PrimaryButton title="INGRESAR" onPress={() => handleLogin()} style={styles.loginButton} />
 
         <TouchableOpacity>
           <ThemedText style={styles.linkText}>Olvidé mi contraseña</ThemedText>
