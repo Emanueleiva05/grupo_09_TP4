@@ -1,6 +1,6 @@
 export type Coordenada = { latitude: number; longitude: number };
 
-type Horario = { dia: string; desde: string; hasta: string };
+export type Horario = { dia: string; desde: string; hasta: string };
 
 export class Zona {
   id: string;

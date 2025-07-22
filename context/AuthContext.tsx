@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         const cargarSesion = async () => {
             try {
-                const data = await AsyncStorage.getItem('usuarios');
+                const data = await AsyncStorage.getItem('usuario');
                 if (data) setUsuario(JSON.parse(data));
             } catch (error) {
                 console.error("Error cargando sesion: ", error);

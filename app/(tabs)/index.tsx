@@ -1,93 +1,94 @@
-import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import MapView, { Polygon } from 'react-native-maps';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MapView, { MapPressEvent, Marker, Polygon } from 'react-native-maps';
+import { v4 as uuidv4 } from 'uuid';
 import CarButton from '../../components/CarButton';
 import NotificationButton from '../../components/NotificationButton';
+import CrearZonaPopup from '../../components/popups/CreateZonePopUp';
 import ParkedVehiclePopup from '../../components/popups/ParkedVehiclePopup';
 import { Colors } from '../../constants/Colors';
-import { Zona } from '../../models/Zona';
-
+import { useAuth } from '../../context/AuthContext';
+import { Coordenada, Horario, Zona } from '../../models/Zona';
 
 export default function MapScreen() {
+  const { usuario } = useAuth();
+  const esAdmin = usuario?.rol === 'admin';
+
+  const [zonas, setZonas] = useState<Zona[]>([]);
+  const [selectedPoints, setSelectedPoints] = useState<Coordenada[]>([]);
+  const [showCrearZonaPopup, setShowCrearZonaPopup] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
 
-  const zonas = [
-    new Zona(
-      'zona1',
-      'Norte-Centro',
+  useEffect(() => {
+    cargarZonas();
+  }, []);
+
+  const cargarZonas = async () => {
+    try {
+      const data = await AsyncStorage.getItem('zonasRegistradas');
+      if (data) {
+        const zonasGuardadas = JSON.parse(data);
+        setZonas(zonasGuardadas);
+      }
+    } catch (error) {
+      console.error('Error cargando zonas:', error);
+    }
+  };
+
+  const guardarZonas = async (zonasAGuardar: Zona[]) => {
+    try {
+      await AsyncStorage.setItem('zonasRegistradas', JSON.stringify(zonasAGuardar));
+      setZonas(zonasAGuardar);
+    } catch (error) {
+      console.error('Error guardando zonas:', error);
+    }
+  };
+
+  const handleMapPress = (e: MapPressEvent) => {
+    if (!esAdmin) return; // Solo admin puede seleccionar puntos
+    const newPoint = e.nativeEvent.coordinate;
+    setSelectedPoints((prev) => [...prev, newPoint]);
+  };
+
+  const cancelarSeleccion = () => {
+    setSelectedPoints([]);
+  };
+
+  const crearZona = () => {
+    if (selectedPoints.length < 3) {
+      Alert.alert('Error', 'Debes seleccionar al menos 3 puntos para crear una zona.');
+      return;
+    }
+    setShowCrearZonaPopup(true);
+  };
+
+  const eliminarZona = () => {
+    Alert.alert(
+      'Confirmar eliminación',
+      '¿Querés eliminar la última zona creada?',
       [
-        { latitude: -34.9090, longitude: -57.9700 },
-        { latitude: -34.9090, longitude: -57.9500 },
-        { latitude: -34.9170, longitude: -57.9450 },
-        { latitude: -34.9200, longitude: -57.9500 },
-        { latitude: -34.9200, longitude: -57.9600 },
-        { latitude: -34.9170, longitude: -57.9690 },
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: () => {
+            const nuevasZonas = zonas.slice(0, -1);
+            guardarZonas(nuevasZonas);
+          },
+        },
       ],
-      [{ dia: 'Lunes', desde: '09:00', hasta: '20:00' }],
-      100,
-      '#e63946'  // rojo claro
-    ),
-    new Zona(
-      'zona2',
-      'Centro',
-      [
-        { latitude: -34.9201, longitude: -57.9600 },
-        { latitude: -34.9201, longitude: -57.9500 },
-        { latitude: -34.9270, longitude: -57.9450 },
-        { latitude: -34.9320, longitude: -57.9500 },
-        { latitude: -34.9320, longitude: -57.9600 },
-        { latitude: -34.9270, longitude: -57.9650 },
-      ],
-      [{ dia: 'Martes', desde: '09:00', hasta: '20:00' }],
-      90,
-      '#f1a208'  // naranja
-    ),
-    new Zona(
-      'zona3',
-      'Sur-Centro',
-      [
-        { latitude: -34.9321, longitude: -57.9600 },
-        { latitude: -34.9321, longitude: -57.9500 },
-        { latitude: -34.9380, longitude: -57.9460 },
-        { latitude: -34.9430, longitude: -57.9500 },
-        { latitude: -34.9430, longitude: -57.9600 },
-        { latitude: -34.9380, longitude: -57.9650 },
-      ],
-      [{ dia: 'Miércoles', desde: '09:00', hasta: '20:00' }],
-      110,
-      '#06d6a0'  // verde agua
-    ),
-    new Zona(
-      'zona4',
-      'Este',
-      [
-        { latitude: -34.9200, longitude: -57.9499 },
-        { latitude: -34.9170, longitude: -57.9450 },
-        { latitude: -34.9250, longitude: -57.9400 },
-        { latitude: -34.9300, longitude: -57.9450 },
-        { latitude: -34.9270, longitude: -57.9499 },
-      ],
-      [{ dia: 'Jueves', desde: '09:00', hasta: '20:00' }],
-      80,
-      '#118ab2'  // azul
-    ),
-    new Zona(
-      'zona5',
-      'Sur-Este',
-      [
-        { latitude: -34.9320, longitude: -57.9499 },
-        { latitude: -34.9300, longitude: -57.9450 },
-        { latitude: -34.9360, longitude: -57.9400 },
-        { latitude: -34.9420, longitude: -57.9450 },
-        { latitude: -34.9380, longitude: -57.9460 },
-      ],
-      [{ dia: 'Viernes', desde: '09:00', hasta: '20:00' }],
-      120,
-      '#8338ec'  // violeta
-    ),
-  ];
-  
-  
+    );
+  };
+
+  const guardarNuevaZona = (nombre: string, precioHora: number, horarios: Horario[], color: string) => {
+    const nuevaZona = new Zona(uuidv4(), nombre, selectedPoints, horarios, precioHora, color);
+    const nuevasZonas = [...zonas, nuevaZona];
+    guardarZonas(nuevasZonas);
+    setSelectedPoints([]);
+    setShowCrearZonaPopup(false);
+  };
+
   return (
     <View style={styles.container}>
       <MapView
@@ -99,52 +100,147 @@ export default function MapScreen() {
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         }}
+        onPress={handleMapPress}
       >
-        {zonas.map(zona => (
+        {zonas.map((zona) => (
           <Polygon
             key={zona.id}
             coordinates={zona.area}
             strokeColor={zona.color}
-            fillColor={`${zona.color}70`} // 70 = ~44% de opacidad
+            fillColor={`${zona.color}70`}
             strokeWidth={2}
           />
         ))}
+
+        {selectedPoints.length > 0 && (
+          <>
+            <Polygon
+              coordinates={selectedPoints}
+              strokeColor="#00ff00"
+              fillColor="rgba(0,255,0,0.3)"
+              strokeWidth={2}
+            />
+            {selectedPoints.map((point, idx) => (
+              <Marker key={idx} coordinate={point} />
+            ))}
+          </>
+        )}
       </MapView>
 
-      <CarButton style={styles.buttonCar} onPress={() => setShowPopup(true)} />
-      <NotificationButton style={styles.buttonBell} count={3} onPress={() => console.log('Notificaciones')} />
+      {!esAdmin && (
+        <>
+          <CarButton style={styles.buttonCar} onPress={() => setShowPopup(true)} />
+          <NotificationButton style={styles.buttonBell} count={3} onPress={() => console.log('Notificaciones')} />
+        </>
+      )}
 
       {showPopup && (
         <View style={styles.popupContainer}>
           <ParkedVehiclePopup onClose={() => setShowPopup(false)} />
         </View>
       )}
+
+      {esAdmin && (
+        <View style={styles.bottomBar}>
+          <TouchableOpacity
+            style={[styles.button, selectedPoints.length < 3 && styles.buttonDisabled]}
+            onPress={crearZona}
+            disabled={selectedPoints.length < 3}
+          >
+            <Text style={styles.buttonText}>Crear</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={eliminarZona}>
+            <Text style={styles.buttonText}>Eliminar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={cancelarSeleccion}>
+            <Text style={[styles.buttonText, styles.cancelButtonText]}>Cancelar</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {showCrearZonaPopup && (
+        <View style={styles.popupContainer}>
+          <CrearZonaPopup
+            onCancel={() => setShowCrearZonaPopup(false)}
+            onSave={guardarNuevaZona}
+          />
+        </View>
+      )}
     </View>
   );
 }
 
-
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: Colors.light.background,
-  },
+  container: { flex: 1, backgroundColor: Colors.light.background },
   map: { flex: 1 },
+  bottomBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#1B1E25',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+  },
+
+  button: {
+    flex: 1,
+    marginHorizontal: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.25,
+    shadowRadius: 2,
+    backgroundColor: '#4a90e2',
+  },
+
+  buttonDisabled: {
+    backgroundColor: '#007AFF',
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+
+  buttonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+
+  cancelButton: {
+    backgroundColor: '#e74c3c',
+  },
+
+  cancelButtonText: {
+    fontWeight: '700',
+  },
+
+  deleteButton: {
+    backgroundColor: '#007AFF',
+  },
+
   buttonCar: {
     position: 'absolute',
     bottom: 20,
     right: 20,
   },
+
   buttonBell: {
     position: 'absolute',
     top: 20,
     right: 20,
-  },  
+  },
+
   popupContainer: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
-  },  
+  },
 });
