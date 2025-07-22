@@ -1,4 +1,5 @@
 import PrimaryButton from '@/components/PrimaryButton';
+import SecondaryButton from '@/components/SecondaryButton';
 import { ThemedInput } from '@/components/ThemedInput';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -58,7 +59,7 @@ export default function Login() {
         </TouchableOpacity>
 
         <ThemedText style={styles.bottomText}>¿No tenés cuenta?</ThemedText>
-        <PrimaryButton
+        <SecondaryButton
           title="REGISTRARSE"
           onPress={() => router.push('/register')}
           style={styles.registerButton}

@@ -1,10 +1,11 @@
+import PasswordChangePopoup from '@/components/popups/PasswordChangePopoup';
 import { SettingsItem } from '@/components/SettingsItem';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import Routes from '../../constants/Routes';
@@ -14,6 +15,12 @@ export default function ConfiguracionScreen() {
   const { usuario, logout } = useAuth();
   const router = useRouter();
   const inicial = usuario?.nombre?.[0]?.toUpperCase() ?? 'U';
+  const [mostrarPopup, setMostrarPopup] = useState(false);
+
+  const handlePasswordChange = () => {
+    setMostrarPopup(true);
+  };
+
   
   const handleLogout = async () => {
     await logout();
@@ -38,7 +45,7 @@ export default function ConfiguracionScreen() {
           <SectionTitle title="Preferencias" />
           <SettingsItem icon="moon"
             text= {`Tema: Claro / Oscuro`}/>
-          <SettingsItem icon="lock-closed-outline" text="Cambiar contraseña" />
+          <SettingsItem icon="lock-closed-outline" text="Cambiar contraseña" onPress={() => handlePasswordChange()}/>
           <SettingsItem icon="language" text="Idioma: Español" />
         </View>
 
@@ -49,6 +56,10 @@ export default function ConfiguracionScreen() {
           <SettingsItem icon="log-out" text="Cerrar sesión" onPress={() => handleLogout()}/>
         </View>
       </ThemedView>
+      
+      {mostrarPopup && (
+        <PasswordChangePopoup onClose={() => setMostrarPopup(false)} />
+      )}
     </ScrollView>
   );
 }
