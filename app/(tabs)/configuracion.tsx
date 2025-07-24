@@ -4,31 +4,76 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { Usuario } from '@/models/Usuario';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Image, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import Routes from '../../constants/Routes';
 
-
 export default function ConfiguracionScreen() {
-  const { usuario, logout } = useAuth();
+  const { usuario, logout, actualizarUsuario } = useAuth();
   const router = useRouter();
   const inicial = usuario?.nombre?.[0]?.toUpperCase() ?? 'U';
+
   const [mostrarPopup, setMostrarPopup] = useState(false);
+  const [nuevaPatente, setNuevaPatente] = useState('');
+  const [misPatentes, setMisPatentes] = useState<string[]>([]);
 
-  const handlePasswordChange = () => {
-    setMostrarPopup(true);
-  };
+  useEffect(() => {
+    setMisPatentes(usuario?.autos ?? []);
+  }, [usuario]);
 
-  
+  const handlePasswordChange = () => setMostrarPopup(true);
+
   const handleLogout = async () => {
     await logout();
     router.push(Routes.Login);
-  }
-  
+  };
+
+  const agregarPatente = async () => {
+    const patente = nuevaPatente.trim().toUpperCase();
+    if (!patente) return;
+    if (misPatentes.includes(patente)) return;
+
+    const nuevas = [...misPatentes, patente];
+    setMisPatentes(nuevas);
+    setNuevaPatente('');
+
+    if (usuario) {
+      const usuarioActualizado = new Usuario(
+        usuario.id,
+        usuario.nombre,
+        usuario.email,
+        usuario.password,
+        usuario.rol
+      );
+      usuarioActualizado.autos = nuevas;
+
+      await actualizarUsuario(usuarioActualizado);
+    }
+  };
+
+  const eliminarPatente = async (index: number) => {
+    if (!usuario) return;
+    const nuevas = misPatentes.filter((_, i) => i !== index);
+    setMisPatentes(nuevas);
+
+    const usuarioActualizado = new Usuario(
+      usuario.id,
+      usuario.nombre,
+      usuario.email,
+      usuario.password,
+      usuario.rol
+    );
+    usuarioActualizado.autos = nuevas;
+
+    await actualizarUsuario(usuarioActualizado);
+  };
+
+
   return (
-    <ScrollView style={{backgroundColor: useThemeColor({}, 'background')}} contentContainerStyle={[styles.container]}>
+    <ScrollView style={{ backgroundColor: useThemeColor({}, 'background') }} contentContainerStyle={styles.container}>
       <ThemedView style={styles.container}>
         <ThemedView style={[styles.profileContainer, { backgroundColor: useThemeColor({}, 'background') }]}>
           <Image
@@ -42,10 +87,39 @@ export default function ConfiguracionScreen() {
         </ThemedView>
 
         <View style={styles.section}>
+          <SectionTitle title="Mis patentes" />
+
+          <View style={styles.patenteInputContainer}>
+            <TextInput
+              style={styles.patenteInput}
+              placeholder="Ingresar patente"
+              value={nuevaPatente}
+              onChangeText={setNuevaPatente}
+              autoCapitalize="characters"
+            />
+            <TouchableOpacity style={styles.addButton} onPress={agregarPatente}>
+              <Text style={styles.addButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
+
+          {misPatentes.length > 0 && (
+            <View style={styles.patentesScrollContainer}>
+              {misPatentes.map((patente, index) => (
+                <View key={index} style={styles.patenteItem}>
+                  <Text style={styles.patenteText}>{patente}</Text>
+                  <TouchableOpacity onPress={() => eliminarPatente(index)}>
+                    <Text style={styles.deleteText}>X</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
+        <View style={styles.section}>
           <SectionTitle title="Preferencias" />
-          <SettingsItem icon="moon"
-            text= {`Tema: Claro / Oscuro`}/>
-          <SettingsItem icon="lock-closed-outline" text="Cambiar contraseña" onPress={() => handlePasswordChange()}/>
+          <SettingsItem icon="moon" text={`Tema: Claro / Oscuro`} />
+          <SettingsItem icon="lock-closed-outline" text="Cambiar contraseña" onPress={handlePasswordChange} />
           <SettingsItem icon="language" text="Idioma: Español" />
         </View>
 
@@ -53,27 +127,23 @@ export default function ConfiguracionScreen() {
           <SectionTitle title="Soporte y cuenta" />
           <SettingsItem icon="help-circle" text="Centro de ayuda" />
           <SettingsItem icon="mail" text="Contacto" />
-          <SettingsItem icon="log-out" text="Cerrar sesión" onPress={() => handleLogout()}/>
+          <SettingsItem icon="log-out" text="Cerrar sesión" onPress={handleLogout} />
         </View>
       </ThemedView>
-      
-      {mostrarPopup && (
-        <PasswordChangePopoup onClose={() => setMostrarPopup(false)} />
-      )}
+
+      {mostrarPopup && <PasswordChangePopoup onClose={() => setMostrarPopup(false)} />}
     </ScrollView>
   );
 }
 
 function SectionTitle({ title }: { title: string }) {
   const textColor = useThemeColor({}, 'text');
-  return (
-    <ThemedText style={[styles.sectionTitle, { color: textColor }]}>{title}</ThemedText>
-  );
+  return <ThemedText style={[styles.sectionTitle, { color: textColor }]}>{title}</ThemedText>;
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     paddingTop: 20,
     paddingHorizontal: 24,
     paddingBottom: 32,
@@ -104,15 +174,54 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     opacity: 0.8,
   },
-  item: {
+  patenteInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+  },
+  patenteInput: {
+    flex: 1,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 8,
+    backgroundColor: '#fff',
+  },
+  addButton: {
+    backgroundColor: '#1E90FF',
+    paddingHorizontal: 12,
     paddingVertical: 8,
+    borderRadius: 8,
   },
-  itemIcon: {
-    marginRight: 12,
+  addButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
-  itemText: {
+  patentesScrollContainer: {
+    maxHeight: 200,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 8,
+    backgroundColor: '#1e1e2e',
+  },
+  patenteItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#444',
+  },
+  patenteText: {
+    color: 'white',
     fontSize: 16,
+  },
+  deleteText: {
+    color: 'red',
+    fontSize: 16,
+    fontWeight: 'bold',
+    paddingHorizontal: 8,
   },
 });

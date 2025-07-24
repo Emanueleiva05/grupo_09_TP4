@@ -1,7 +1,7 @@
 import { Usuario } from "@/models/Usuario";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from "react";
-import 'react-native-get-random-values'; // hace que funcione la creacion del id
+import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
 
 type AuthContextType = {
@@ -12,20 +12,30 @@ type AuthContextType = {
     isLoading: boolean;
     error: string | null;
     crearAdmin: () => Promise<void>;
+    actualizarUsuario: (usuarioActualizado: Usuario) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function convertirAUsuario(data: any): Usuario {
+    const usuario = new Usuario(data.id, data.nombre, data.email, data.password, data.rol);
+    usuario.autos = data.autos ?? [];
+    return usuario;
+}
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [usuario, setUsuario] = useState<Usuario | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    
+
     useEffect(() => {
         const cargarSesion = async () => {
             try {
                 const data = await AsyncStorage.getItem('usuario');
-                if (data) setUsuario(JSON.parse(data));
+                if (data) {
+                    const usuarioRecuperado = convertirAUsuario(JSON.parse(data));
+                    setUsuario(usuarioRecuperado);
+                }
             } catch (error) {
                 console.error("Error cargando sesion: ", error);
             } finally {
@@ -34,84 +44,106 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
         cargarSesion();
     }, []);
-    
+
     const login = async (email: string, password: string): Promise<boolean> => {
         setError(null);
         const data = await AsyncStorage.getItem('usuariosRegistrados');
-        const usuarios: Usuario[] = data ? JSON.parse(data) : [];
-        
-        const encontrado = usuarios.find(
-            (u) => u.email === email && u.password === password
+        const usuariosRaw = data ? JSON.parse(data) : [];
+
+        const encontradoRaw = usuariosRaw.find(
+            (u: any) => u.email === email && u.password === password
         );
-        
-        if (encontrado) {
-            setUsuario(encontrado);
-            await AsyncStorage.setItem('usuario', JSON.stringify(encontrado));
+
+        if (encontradoRaw) {
+            const usuarioReal = convertirAUsuario(encontradoRaw);
+            setUsuario(usuarioReal);
+            await AsyncStorage.setItem('usuario', JSON.stringify(encontradoRaw));
             return true;
         } else {
             setError('Credenciales incorrectas');
             return false;
         }
     };
-    
+
     const register = async (nuevoUsuario: Usuario): Promise<boolean> => {
         setError(null);
         const data = await AsyncStorage.getItem('usuariosRegistrados');
         const usuarios: Usuario[] = data ? JSON.parse(data) : [];
-        
+
         const existe = usuarios.some((u) => u.email === nuevoUsuario.email);
         if (existe) {
             setError('Ya existe un usuario con ese email');
             return false;
         }
-        
+
         const actualizado = [...usuarios, nuevoUsuario];
-        await AsyncStorage.setItem('usuariosRegistrados', JSON.stringify(actualizado)); //agrega al usuario a la lista de usuarios registrados
-        await AsyncStorage.setItem('usuario', JSON.stringify(nuevoUsuario)); //persiste la sesion
-        setUsuario(nuevoUsuario); // mete al usuario al context (es parte del logeo de sesion)
+        await AsyncStorage.setItem('usuariosRegistrados', JSON.stringify(actualizado));
+        await AsyncStorage.setItem('usuario', JSON.stringify(nuevoUsuario));
+        setUsuario(nuevoUsuario);
         return true;
     }
-    
+
     const logout = async () => {
         setUsuario(null);
         await AsyncStorage.removeItem('usuario');
     };
-    
-    // funcion para crear un admin, con datos harcodeados para pruebas
+
     const crearAdmin = async () => {
-    try {
-        const usuariosRaw = await AsyncStorage.getItem("usuariosRegistrados");
-        const usuarios = usuariosRaw ? JSON.parse(usuariosRaw) : [];
+        try {
+            const usuariosRaw = await AsyncStorage.getItem("usuariosRegistrados");
+            const usuarios = usuariosRaw ? JSON.parse(usuariosRaw) : [];
 
-        // Verificar si ya existe un admin con ese mail
-        const yaExiste = usuarios.some((u: any) => u.email === "admin@admin.com");
-        if (yaExiste) {
-            const encontrado = usuarios.find((u: any) => u.email === "admin@admin.com");
-            console.log("Ya existe un usuario admin.");
-            console.log(encontrado);
-            return;
+            const yaExiste = usuarios.some((u: any) => u.email === "admin@admin.com");
+            if (yaExiste) {
+                const encontrado = usuarios.find((u: any) => u.email === "admin@admin.com");
+                console.log("Ya existe un usuario admin.");
+                console.log(encontrado);
+                return;
+            }
+
+            const nuevoAdmin = {
+                id: uuidv4(),
+                nombre: "admin",
+                email: "admin@admin.com",
+                password: "admin123",
+                rol: "admin",
+                autos: [],
+            };
+
+            const usuariosActualizados = [...usuarios, nuevoAdmin];
+            await AsyncStorage.setItem("usuariosRegistrados", JSON.stringify(usuariosActualizados));
+            console.log("Usuario admin creado correctamente.");
+            console.log(nuevoAdmin);
+        } catch (error) {
+            console.error("Error al crear el usuario admin:", error);
         }
-
-        const nuevoAdmin = {
-        id: uuidv4(),
-        nombre: "admin",
-        email: "admin@admin.com",
-        password: "admin123",
-        rol: "admin",
-        autos: [],
-        };
-
-        const usuariosActualizados = [...usuarios, nuevoAdmin];
-        await AsyncStorage.setItem("usuariosRegistrados", JSON.stringify(usuariosActualizados));
-        console.log("Usuario admin creado correctamente.");
-        console.log(nuevoAdmin);
-    } catch (error) {
-        console.error("Error al crear el usuario admin:", error);
-    }
     };
-    
+
+    const actualizarUsuario = async (usuarioActualizado: Usuario) => {
+        setUsuario(usuarioActualizado);
+        await AsyncStorage.setItem('usuario', JSON.stringify(usuarioActualizado));
+
+        const data = await AsyncStorage.getItem('usuariosRegistrados');
+        const usuarios: Usuario[] = data ? JSON.parse(data) : [];
+        const index = usuarios.findIndex(u => u.id === usuarioActualizado.id);
+        if (index !== -1) {
+            usuarios[index] = usuarioActualizado;
+            await AsyncStorage.setItem('usuariosRegistrados', JSON.stringify(usuarios));
+        }
+    };
+
+
     return (
-        <AuthContext.Provider value={{ usuario, login, register, logout, isLoading, error, crearAdmin }}>
+        <AuthContext.Provider value={{
+            usuario,
+            login,
+            register,
+            logout,
+            isLoading,
+            error,
+            crearAdmin,
+            actualizarUsuario,
+        }}>
             {children}
         </AuthContext.Provider>
     );
