@@ -1,3 +1,4 @@
+import ZonaInfoPopup from '@/components/popups/ZonaInfoPopUp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -19,6 +20,8 @@ export default function MapScreen() {
   const [selectedPoints, setSelectedPoints] = useState<Coordenada[]>([]);
   const [showCrearZonaPopup, setShowCrearZonaPopup] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [zonaSeleccionada, setZonaSeleccionada] = useState<Zona | null>(null);
+  const [mostrarZonaPopup, setMostrarZonaPopup] = useState(false);
 
   useEffect(() => {
     cargarZonas();
@@ -63,24 +66,6 @@ export default function MapScreen() {
     setShowCrearZonaPopup(true);
   };
 
-  const eliminarZona = () => {
-    Alert.alert(
-      'Confirmar eliminación',
-      '¿Querés eliminar la última zona creada?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: () => {
-            const nuevasZonas = zonas.slice(0, -1);
-            guardarZonas(nuevasZonas);
-          },
-        },
-      ],
-    );
-  };
-
   const guardarNuevaZona = (nombre: string, precioHora: number, horarios: Horario[], color: string) => {
     const nuevaZona = new Zona(uuidv4(), nombre, selectedPoints, horarios, precioHora, color);
     const nuevasZonas = [...zonas, nuevaZona];
@@ -109,6 +94,11 @@ export default function MapScreen() {
             strokeColor={zona.color}
             fillColor={`${zona.color}70`}
             strokeWidth={2}
+            tappable
+            onPress={() => {
+              setZonaSeleccionada(zona);
+              setMostrarZonaPopup(true);
+            }}
           />
         ))}
 
@@ -150,10 +140,6 @@ export default function MapScreen() {
             <Text style={styles.buttonText}>Crear</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={eliminarZona}>
-            <Text style={styles.buttonText}>Eliminar</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={cancelarSeleccion}>
             <Text style={[styles.buttonText, styles.cancelButtonText]}>Cancelar</Text>
           </TouchableOpacity>
@@ -168,6 +154,39 @@ export default function MapScreen() {
           />
         </View>
       )}
+
+      {zonaSeleccionada && mostrarZonaPopup && (
+        <ZonaInfoPopup
+          visible={mostrarZonaPopup}
+          zona={zonaSeleccionada}
+          onClose={() => {
+            setZonaSeleccionada(null);
+            setMostrarZonaPopup(false);
+          }}
+          esAdmin={esAdmin} 
+          onEliminarZona={() => {
+            Alert.alert(
+              'Eliminar zona',
+              '¿Estás seguro de que querés eliminar esta zona?',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Eliminar',
+                  style: 'destructive',
+                  onPress: () => {
+                    const nuevasZonas = zonas.filter(z => z.id !== zonaSeleccionada.id);
+                    guardarZonas(nuevasZonas);
+                    setZonaSeleccionada(null);
+                    setMostrarZonaPopup(false);
+                  },
+                },
+              ],
+            );
+          }}
+        />
+      )}
+
+
     </View>
   );
 }
