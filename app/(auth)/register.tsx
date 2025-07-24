@@ -4,7 +4,6 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Checkbox from 'expo-checkbox';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -34,6 +33,9 @@ export default function Register() {
   const router = useRouter();
   const { register, error } = useAuth();
   const { crearAdmin } = useAuth();
+  const [errorUser, setErrorUser] = useState(false);
+  const [errorEmail, setErrorEmail] = useState(false);
+  const [errorPassword, setErrorPassword] = useState(false);
 
   // Obtener colores del tema
   const backgroundColor = useThemeColor({}, 'background');
@@ -49,10 +51,27 @@ export default function Register() {
   };
 
   const handleRegister = async () => {
+    setErrorUser(false);
+    setErrorEmail(false);
+    setErrorPassword(false);
+    
+    if (user.trim() === ""){
+      setErrorUser(true);
+      return;
+    }
+    
+    if (email.trim() === "" || !email.includes('@') || !email.includes('.com')) {
+      setErrorEmail(true);
+      return;
+    }
+    
+    if (password.trim() === "" || repeatPassword.trim() === "" || password !== repeatPassword ) {
+      setErrorPassword(true);
+      return;
+    }
+    
     const nuevo = new Usuario(uuidv4(), user, email, password, rol);
     const exito = await register(nuevo);
-    const data = await AsyncStorage.getItem('usuariosRegistrados');
-    console.log(data);
     if (!exito) {
       Alert.alert("Error", error ?? "Error desconocido");
     } else {
@@ -75,18 +94,31 @@ export default function Register() {
               resizeMode="contain"
             />
 
+            
             <ThemedText style={[styles.label, { color: textColor }]}>Usuario</ThemedText>
+            {errorUser && <ThemedText style={styles.errorText}>El usuario no puede estar vacio</ThemedText>}
             <ThemedInput
-              style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
+              style={[
+                styles.input,
+                { backgroundColor: inputBackground, color: textColor },
+                errorUser && styles.errorInput, // se agrega solo si hay error
+              ]}
               placeholder="Ej.: PerezJuan"
               value={user}
-              onChangeText={setUser}
+              onChangeText={(text) => {
+                setUser(text);
+                if (errorUser) setErrorUser(false);
+              }}
               autoCapitalize="none"
             />
-
             <ThemedText style={[styles.label, { color: textColor }]}>Email</ThemedText>
+            {errorEmail && <ThemedText style={styles.errorText}>El email no puede estar vacio, y tiene que contener un @ y .com</ThemedText>}
             <ThemedInput
-              style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
+              style={[
+                styles.input,
+                { backgroundColor: inputBackground, color: textColor },
+                errorEmail && styles.errorInput, // se agrega solo si hay error
+              ]}
               placeholder="Ej.: ejemplo@ejemplo.com"
               value={email}
               onChangeText={setEmail}
@@ -95,8 +127,13 @@ export default function Register() {
             />
 
             <ThemedText style={[styles.label, { color: textColor }]}>Contraseña</ThemedText>
+            {errorPassword && <ThemedText style={styles.errorText}>Los campos de contraseñas no pueden estar vacios y tienen que coincidir</ThemedText>}
             <ThemedInput
-              style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
+              style={[
+                styles.input,
+                { backgroundColor: inputBackground, color: textColor },
+                errorPassword && styles.errorInput, // se agrega solo si hay error
+              ]}
               placeholder="Ej.: 1234"
               value={password}
               onChangeText={setPassword}
@@ -106,7 +143,11 @@ export default function Register() {
 
             <ThemedText style={[styles.label, { color: textColor }]}>Repetir contraseña</ThemedText>
             <ThemedInput
-              style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
+              style={[
+                styles.input,
+                { backgroundColor: inputBackground, color: textColor },
+                errorPassword && styles.errorInput, // se agrega solo si hay error
+              ]}
               placeholder="Ej.: 1234"
               value={repeatPassword}
               onChangeText={setRepeatPassword}
@@ -185,5 +226,13 @@ const styles = StyleSheet.create({
   linkText: {
     marginTop: 8,
     color: '#89b4fa',
+  },
+  errorText: {
+    color: "red",
+    marginBottom: 8,
+  },
+  errorInput: {
+    borderColor: "red",
+    borderWidth: 1,
   },
 });
