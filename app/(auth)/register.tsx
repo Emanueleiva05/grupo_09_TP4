@@ -3,16 +3,26 @@ import { ThemedInput } from '@/components/ThemedInput';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/context/AuthContext';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Checkbox from 'expo-checkbox';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
-import 'react-native-get-random-values'; // hace que funcione la creacion del id
+import {
+  Alert,
+  Image,
+  Keyboard,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View
+} from 'react-native';
+import 'react-native-get-random-values';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { v4 as uuidv4 } from 'uuid';
 import Routes from '../../constants/Routes';
 import { Usuario } from '../../models/Usuario';
-
 
 export default function Register() {
   const [user, setUser] = useState('');
@@ -24,12 +34,20 @@ export default function Register() {
   const router = useRouter();
   const { register, error } = useAuth();
   const { crearAdmin } = useAuth();
+
+  // Obtener colores del tema
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const inputBackground = useThemeColor({}, 'inputBackground');
+  const primaryColor = useThemeColor({}, 'primary');
   
-  //Para probar
+  //Permite detectar safe areas para evitar superposicion de botones predeterminados de ciertos dispositivos
+  const insets = useSafeAreaInsets();
+
   const handleCrearAdmin = async () => {
     await crearAdmin();
   };
-  
+
   const handleRegister = async () => {
     const nuevo = new Usuario(uuidv4(), user, email, password, rol);
     const exito = await register(nuevo);
@@ -40,104 +58,117 @@ export default function Register() {
     } else {
       router.push(Routes.Home);
     }
-  }
-  
+  };
+
   return (
-    <ThemedView style={styles.container}>
-        <Image
-          source={require('@/assets/images/logo-azul.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <KeyboardAwareScrollView
+          style={{backgroundColor: useThemeColor({}, 'background')}}
+          contentContainerStyle={{...styles.scrollContainer, paddingBottom: 24 + insets.bottom}}
+          enableOnAndroid={true}
+          extraScrollHeight={20}
+        >
+          <ThemedView style={styles.container}>
+            <Image
+              source={require('@/assets/images/logo-azul.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
 
-        <ThemedText style={styles.label}>Usuario</ThemedText>
-        <ThemedInput
-          style={styles.input}
-          placeholder="Ej.: PerezJuan"
-          value={user}
-          onChangeText={setUser}
-          autoCapitalize="none"
-        />
-        
-        <ThemedText style={styles.label}>Email</ThemedText>
-        <ThemedInput
-          style={styles.input}
-          placeholder="Ej.: ejemplo@ejemplo.com"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+            <ThemedText style={[styles.label, { color: textColor }]}>Usuario</ThemedText>
+            <ThemedInput
+              style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
+              placeholder="Ej.: PerezJuan"
+              value={user}
+              onChangeText={setUser}
+              autoCapitalize="none"
+            />
 
-        <ThemedText style={styles.label}>Contraseña</ThemedText>
-        <ThemedInput
-          style={styles.input}
-          placeholder="Ej.: 1234"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
+            <ThemedText style={[styles.label, { color: textColor }]}>Email</ThemedText>
+            <ThemedInput
+              style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
+              placeholder="Ej.: ejemplo@ejemplo.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
 
-        <ThemedText style={styles.label}>Repetir contraseña</ThemedText>
-        <ThemedInput
-          style={styles.input}
-          placeholder="Ej.: 1234"
-          value={repeatPassword}
-          onChangeText={setRepeatPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
+            <ThemedText style={[styles.label, { color: textColor }]}>Contraseña</ThemedText>
+            <ThemedInput
+              style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
+              placeholder="Ej.: 1234"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+            />
 
-        <View style={styles.checkboxContainer}>
-          <Checkbox
-            value={isTransitStaff}
-            onValueChange={setIsTransitStaff}
-            color={isTransitStaff ? '#89b4fa' : undefined}
-          />
-          <ThemedText style={styles.checkboxLabel}>¿Eres personal de tránsito?</ThemedText>
-        </View>
+            <ThemedText style={[styles.label, { color: textColor }]}>Repetir contraseña</ThemedText>
+            <ThemedInput
+              style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
+              placeholder="Ej.: 1234"
+              value={repeatPassword}
+              onChangeText={setRepeatPassword}
+              secureTextEntry
+              autoCapitalize="none"
+            />
 
-        <PrimaryButton title="CREAR CUENTA" onPress={() => handleRegister()} style={styles.registerButton} />
-        <PrimaryButton title="CREAR ADMIN" onPress={() => handleCrearAdmin()} style={styles.registerButton} />  
+            <View style={styles.checkboxRow}>
+              <Checkbox
+                value={isTransitStaff}
+                onValueChange={setIsTransitStaff}
+                color={isTransitStaff ? primaryColor : undefined}
+              />
+              <ThemedText style={[styles.checkboxLabel, { color: textColor }]}>¿Eres personal de tránsito?</ThemedText>
+            </View>
 
-        <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-          <ThemedText style={styles.linkText}>¿Ya tenés cuenta? Iniciar sesión</ThemedText>
-        </TouchableOpacity>
-    </ThemedView>
+            <PrimaryButton title="CREAR CUENTA" onPress={handleRegister} style={[styles.registerButton, { backgroundColor: primaryColor }]} />
+            <PrimaryButton title="CREAR ADMIN" onPress={handleCrearAdmin} style={[styles.registerButton, { backgroundColor: primaryColor }]} />
+
+            <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+              <ThemedText style={styles.linkText}>¿Ya tenés cuenta? Iniciar sesión</ThemedText>
+            </TouchableOpacity>
+          </ThemedView>
+        </KeyboardAwareScrollView>
+    </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboard: {
+    flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    padding: 24,
+  },
   container: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    backgroundColor: '#1e1e2e', // fondo oscuro opcional
   },
-  
   logo: {
     width: 200,
     height: 200,
     marginBottom: 24,
+    alignSelf: 'center',
   },
   label: {
     alignSelf: 'flex-start',
     marginLeft: 8,
     marginBottom: 4,
-    color: '#ffffff',
   },
   input: {
     width: '100%',
     marginBottom: 12,
-    backgroundColor: '#3a3a4c',
-    color: '#ffffff',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  checkboxContainer: {
+  checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
@@ -146,13 +177,13 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     marginLeft: 8,
-    color: '#ffffff',
   },
   registerButton: {
     width: '100%',
     marginBottom: 16,
   },
   linkText: {
+    marginTop: 8,
     color: '#89b4fa',
   },
 });
