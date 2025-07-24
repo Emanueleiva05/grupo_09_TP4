@@ -1,6 +1,8 @@
 import { Usuario } from "@/models/Usuario";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from "react";
+import 'react-native-get-random-values'; // hace que funcione la creacion del id
+import { v4 as uuidv4 } from 'uuid';
 
 type AuthContextType = {
     usuario: Usuario | null;
@@ -9,6 +11,7 @@ type AuthContextType = {
     logout: () => Promise<void>;
     isLoading: boolean;
     error: string | null;
+    crearAdmin: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -74,8 +77,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await AsyncStorage.removeItem('usuario');
     };
     
+    // funcion para crear un admin, con datos harcodeados para pruebas
+    const crearAdmin = async () => {
+    try {
+        const usuariosRaw = await AsyncStorage.getItem("usuariosRegistrados");
+        const usuarios = usuariosRaw ? JSON.parse(usuariosRaw) : [];
+
+        // Verificar si ya existe un admin con ese mail
+        const yaExiste = usuarios.some((u: any) => u.email === "admin@admin.com");
+        if (yaExiste) {
+            const encontrado = usuarios.find((u: any) => u.email === "admin@admin.com");
+            console.log("Ya existe un usuario admin.");
+            console.log(encontrado);
+            return;
+        }
+
+        const nuevoAdmin = {
+        id: uuidv4(),
+        nombre: "admin",
+        email: "admin@admin.com",
+        password: "admin123",
+        rol: "admin",
+        autos: [],
+        };
+
+        const usuariosActualizados = [...usuarios, nuevoAdmin];
+        await AsyncStorage.setItem("usuariosRegistrados", JSON.stringify(usuariosActualizados));
+        console.log("Usuario admin creado correctamente.");
+        console.log(nuevoAdmin);
+    } catch (error) {
+        console.error("Error al crear el usuario admin:", error);
+    }
+    };
+    
     return (
-        <AuthContext.Provider value={{ usuario, login, register, logout, isLoading, error }}>
+        <AuthContext.Provider value={{ usuario, login, register, logout, isLoading, error, crearAdmin }}>
             {children}
         </AuthContext.Provider>
     );

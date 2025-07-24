@@ -23,6 +23,12 @@ export default function Register() {
   const rol = isTransitStaff ? 'guardia' : 'cliente';
   const router = useRouter();
   const { register, error } = useAuth();
+  const { crearAdmin } = useAuth();
+  
+  //Para probar
+  const handleCrearAdmin = async () => {
+    await crearAdmin();
+  };
   
   const handleRegister = async () => {
     const nuevo = new Usuario(uuidv4(), user, email, password, rol);
@@ -93,6 +99,7 @@ export default function Register() {
         </View>
 
         <PrimaryButton title="CREAR CUENTA" onPress={() => handleRegister()} style={styles.registerButton} />
+        <PrimaryButton title="CREAR ADMIN" onPress={() => handleCrearAdmin()} style={styles.registerButton} />  
 
         <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
           <ThemedText style={styles.linkText}>¿Ya tenés cuenta? Iniciar sesión</ThemedText>

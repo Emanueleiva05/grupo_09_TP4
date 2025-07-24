@@ -69,7 +69,7 @@ export default function PasswordChangePopoup({ onClose }: Props) {
                 {errorVacio && <ThemedText style={styles.errorText}>No pueden haber campos vacios</ThemedText>}
                 <ThemedText>Ingresar contraseña actual</ThemedText>
                 <ThemedInput 
-                    placeholder="Contrasenia actual"
+                    placeholder="Contraseña actual"
                     value={passwordActual}
                     onChangeText={setPasswordActual}
                     autoCapitalize="none"
@@ -80,7 +80,7 @@ export default function PasswordChangePopoup({ onClose }: Props) {
                 
                 <ThemedText>Ingresar la nueva contraseña</ThemedText>
                 <ThemedInput 
-                    placeholder="Contrasenia nueva"
+                    placeholder="Contraseña nueva"
                     value={newPassword}
                     onChangeText={setNewPassword}
                     autoCapitalize="none"
@@ -89,7 +89,7 @@ export default function PasswordChangePopoup({ onClose }: Props) {
                 />
                 <ThemedText>Confirmar la nueva contraseña</ThemedText>
                 <ThemedInput 
-                    placeholder="Contrasenia actual"
+                    placeholder="Contraseña nueva"
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     autoCapitalize="none"
