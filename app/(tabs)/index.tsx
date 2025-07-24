@@ -1,3 +1,4 @@
+import ZonaInfoPopup from '@/components/popups/ZonaInfoPopUp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -19,6 +20,8 @@ export default function MapScreen() {
   const [selectedPoints, setSelectedPoints] = useState<Coordenada[]>([]);
   const [showCrearZonaPopup, setShowCrearZonaPopup] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [zonaSeleccionada, setZonaSeleccionada] = useState<Zona | null>(null);
+  const [mostrarZonaPopup, setMostrarZonaPopup] = useState(false);
 
   useEffect(() => {
     cargarZonas();
@@ -109,6 +112,11 @@ export default function MapScreen() {
             strokeColor={zona.color}
             fillColor={`${zona.color}70`}
             strokeWidth={2}
+            tappable
+            onPress={() => {
+              setZonaSeleccionada(zona);
+              setMostrarZonaPopup(true);
+            }}
           />
         ))}
 
@@ -168,6 +176,18 @@ export default function MapScreen() {
           />
         </View>
       )}
+
+      {zonaSeleccionada && mostrarZonaPopup && (
+        <ZonaInfoPopup
+          visible={mostrarZonaPopup}
+          zona={zonaSeleccionada}
+          onClose={() => {
+            setZonaSeleccionada(null);
+            setMostrarZonaPopup(false);
+          }}
+        />
+      )}
+
     </View>
   );
 }
