@@ -8,9 +8,12 @@ type Props = {
   zona: Zona | null;
   visible: boolean;
   onClose: () => void;
+  esAdmin?: boolean;
+  onEliminarZona?: () => void;
 };
 
-export default function ZonaInfoPopup({ zona, visible, onClose }: Props) {
+
+export default function ZonaInfoPopup({ zona, visible, onClose, esAdmin, onEliminarZona }: Props) {
   if (!zona) return null;
 
   return (
@@ -38,6 +41,15 @@ export default function ZonaInfoPopup({ zona, visible, onClose }: Props) {
               <Text key={i} style={styles.infoText}>{`${h.dia}: ${h.desde} - ${h.hasta}`}</Text>
             ))}
           </View>
+
+          {esAdmin && onEliminarZona && (
+            <TouchableOpacity
+              style={[styles.closeButtonBottom, { backgroundColor: '#e74c3c', marginTop: 10 }]}
+              onPress={onEliminarZona}
+            >
+              <Text style={styles.closeButtonText}>Eliminar zona</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity style={styles.closeButtonBottom} onPress={onClose}>
             <Text style={styles.closeButtonText}>Cerrar</Text>

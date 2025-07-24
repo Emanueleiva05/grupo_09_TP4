@@ -66,24 +66,6 @@ export default function MapScreen() {
     setShowCrearZonaPopup(true);
   };
 
-  const eliminarZona = () => {
-    Alert.alert(
-      'Confirmar eliminación',
-      '¿Querés eliminar la última zona creada?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Eliminar',
-          style: 'destructive',
-          onPress: () => {
-            const nuevasZonas = zonas.slice(0, -1);
-            guardarZonas(nuevasZonas);
-          },
-        },
-      ],
-    );
-  };
-
   const guardarNuevaZona = (nombre: string, precioHora: number, horarios: Horario[], color: string) => {
     const nuevaZona = new Zona(uuidv4(), nombre, selectedPoints, horarios, precioHora, color);
     const nuevasZonas = [...zonas, nuevaZona];
@@ -158,10 +140,6 @@ export default function MapScreen() {
             <Text style={styles.buttonText}>Crear</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={eliminarZona}>
-            <Text style={styles.buttonText}>Eliminar</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={cancelarSeleccion}>
             <Text style={[styles.buttonText, styles.cancelButtonText]}>Cancelar</Text>
           </TouchableOpacity>
@@ -185,8 +163,29 @@ export default function MapScreen() {
             setZonaSeleccionada(null);
             setMostrarZonaPopup(false);
           }}
+          esAdmin={esAdmin} 
+          onEliminarZona={() => {
+            Alert.alert(
+              'Eliminar zona',
+              '¿Estás seguro de que querés eliminar esta zona?',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Eliminar',
+                  style: 'destructive',
+                  onPress: () => {
+                    const nuevasZonas = zonas.filter(z => z.id !== zonaSeleccionada.id);
+                    guardarZonas(nuevasZonas);
+                    setZonaSeleccionada(null);
+                    setMostrarZonaPopup(false);
+                  },
+                },
+              ],
+            );
+          }}
         />
       )}
+
 
     </View>
   );
