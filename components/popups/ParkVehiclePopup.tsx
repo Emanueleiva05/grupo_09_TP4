@@ -4,9 +4,14 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import PopupCard from './PopupCard';
 
-type Props = { onClose: () => void; };
+type Props = {
+  onClose: () => void;
+  patentes: string[];
+};
 
-export default function ParkVehiclePopup({ onClose }: Props) {
+export default function ParkVehiclePopup({ onClose, patentes }: Props) {
+  const [patenteSeleccionada, setPatenteSeleccionada] = React.useState(patentes[0] || '');
+
   return (
     <PopupCard>
       <View style={styles.header}>
@@ -16,9 +21,14 @@ export default function ParkVehiclePopup({ onClose }: Props) {
         </TouchableOpacity>
       </View>
 
-      <Picker style={styles.picker}>
-        <Picker.Item label="XXX 000" value="xxx000" />
-        <Picker.Item label="ZZZ 222" value="zzz222" />
+      <Picker
+        style={styles.picker}
+        selectedValue={patenteSeleccionada}
+        onValueChange={(itemValue) => setPatenteSeleccionada(itemValue)}
+      >
+        {patentes.map((patente) => (
+          <Picker.Item key={patente} label={patente} value={patente} />
+        ))}
       </Picker>
 
       <View style={styles.infoBox}>
@@ -34,6 +44,7 @@ export default function ParkVehiclePopup({ onClose }: Props) {
     </PopupCard>
   );
 }
+
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

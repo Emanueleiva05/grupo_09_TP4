@@ -1,3 +1,4 @@
+import ParkVehiclePopup from '@/components/popups/ParkVehiclePopup';
 import ZonaInfoPopup from '@/components/popups/ZonaInfoPopUp';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
@@ -7,7 +8,6 @@ import { v4 as uuidv4 } from 'uuid';
 import CarButton from '../../components/CarButton';
 import NotificationButton from '../../components/NotificationButton';
 import CrearZonaPopup from '../../components/popups/CreateZonePopUp';
-import ParkedVehiclePopup from '../../components/popups/ParkedVehiclePopup';
 import { Colors } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { Coordenada, Horario, Zona } from '../../models/Zona';
@@ -126,7 +126,10 @@ export default function MapScreen() {
 
       {showPopup && (
         <View style={styles.popupContainer}>
-          <ParkedVehiclePopup onClose={() => setShowPopup(false)} />
+          <ParkVehiclePopup
+            onClose={() => setShowPopup(false)}
+            patentes={usuario?.autos ?? []}
+          />
         </View>
       )}
 
@@ -163,7 +166,7 @@ export default function MapScreen() {
             setZonaSeleccionada(null);
             setMostrarZonaPopup(false);
           }}
-          esAdmin={esAdmin} 
+          esAdmin={esAdmin}
           onEliminarZona={() => {
             Alert.alert(
               'Eliminar zona',
