@@ -4,7 +4,9 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/context/AuthContext';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { Auto } from '@/models/Auto';
 import { Usuario } from '@/models/Usuario';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -18,11 +20,44 @@ export default function ConfiguracionScreen() {
 
   const [mostrarPopup, setMostrarPopup] = useState(false);
   const [nuevaPatente, setNuevaPatente] = useState('');
-  const [misPatentes, setMisPatentes] = useState<string[]>([]);
+  const [misPatentes, setMisPatentes] = useState<Auto[]>([]);
 
   useEffect(() => {
-    setMisPatentes(usuario?.autos ?? []);
+    const cargarPatentes = async () => {
+      // Cargo patentes desde AsyncStorage
+      const guardadas = await AsyncStorage.getItem('patentes');
+      let autosDesdeStorage: Auto[] = [];
+
+      if (guardadas) {
+        const autosPlanos = JSON.parse(guardadas);
+        autosDesdeStorage = autosPlanos.map((a: any) => new Auto(
+          a.patente,
+          a.zonaId ?? '',
+          a.posicion ?? { latitude: 0, longitude: 0 },
+          a.fechaEstacionamiento ? new Date(a.fechaEstacionamiento) : undefined
+        ));
+      }
+
+      // También tomo autos del usuario
+      const autosDesdeUsuario = usuario?.autos ?? [];
+
+      // Unifico ambas listas sin duplicados (por patente)
+      const todasPatentesMap = new Map<string, Auto>();
+
+      autosDesdeStorage.forEach(auto => todasPatentesMap.set(auto.patente, auto));
+      autosDesdeUsuario.forEach(auto => todasPatentesMap.set(auto.patente, auto));
+
+      // Paso a array
+      const todasPatentes = Array.from(todasPatentesMap.values());
+
+      setMisPatentes(todasPatentes);
+
+      console.log("Patentes unificadas al cargar:", todasPatentes);
+    };
+    cargarPatentes();
   }, [usuario]);
+
+
 
   const handlePasswordChange = () => setMostrarPopup(true);
 
@@ -34,9 +69,12 @@ export default function ConfiguracionScreen() {
   const agregarPatente = async () => {
     const patente = nuevaPatente.trim().toUpperCase();
     if (!patente) return;
-    if (misPatentes.includes(patente)) return;
 
-    const nuevas = [...misPatentes, patente];
+    if (misPatentes.some(auto => auto.patente === patente)) return;
+
+    const nuevoAuto = new Auto(patente, '', { latitude: 0, longitude: 0 });
+
+    const nuevas = [...misPatentes, nuevoAuto];
     setMisPatentes(nuevas);
     setNuevaPatente('');
 
@@ -51,12 +89,21 @@ export default function ConfiguracionScreen() {
       usuarioActualizado.autos = nuevas;
 
       await actualizarUsuario(usuarioActualizado);
+      await AsyncStorage.setItem('patentes', JSON.stringify(
+        nuevas.map(a => ({
+          patente: a.patente,
+          zonaId: a.zonaId,
+          posicion: a.posicion,
+          fechaEstacionamiento: a.fechaEstacionamiento.toISOString(),
+        }))
+      ));
+
     }
   };
 
-  const eliminarPatente = async (index: number) => {
+  const eliminarPatentePorPatente = async (patente: string) => {
     if (!usuario) return;
-    const nuevas = misPatentes.filter((_, i) => i !== index);
+    const nuevas = misPatentes.filter(auto => auto.patente !== patente);
     setMisPatentes(nuevas);
 
     const usuarioActualizado = new Usuario(
@@ -69,11 +116,23 @@ export default function ConfiguracionScreen() {
     usuarioActualizado.autos = nuevas;
 
     await actualizarUsuario(usuarioActualizado);
+    await AsyncStorage.setItem('patentes', JSON.stringify(
+      nuevas.map(a => ({
+        patente: a.patente,
+        zonaId: a.zonaId,
+        posicion: a.posicion,
+        fechaEstacionamiento: a.fechaEstacionamiento.toISOString(),
+      }))
+    ));
   };
 
 
   return (
-    <ScrollView style={{ backgroundColor: useThemeColor({}, 'background') }} contentContainerStyle={styles.container}>
+    <ScrollView
+      style={{ backgroundColor: useThemeColor({}, 'background') }}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
       <ThemedView style={styles.container}>
         <ThemedView style={[styles.profileContainer, { backgroundColor: useThemeColor({}, 'background') }]}>
           <Image
@@ -96,6 +155,8 @@ export default function ConfiguracionScreen() {
               value={nuevaPatente}
               onChangeText={setNuevaPatente}
               autoCapitalize="characters"
+              keyboardType="default"
+              returnKeyType="done"
             />
             <TouchableOpacity style={styles.addButton} onPress={agregarPatente}>
               <Text style={styles.addButtonText}>+</Text>
@@ -104,14 +165,15 @@ export default function ConfiguracionScreen() {
 
           {misPatentes.length > 0 && (
             <View style={styles.patentesScrollContainer}>
-              {misPatentes.map((patente, index) => (
-                <View key={index} style={styles.patenteItem}>
-                  <Text style={styles.patenteText}>{patente}</Text>
-                  <TouchableOpacity onPress={() => eliminarPatente(index)}>
+              {misPatentes.map(auto => (
+                <View key={auto.patente} style={styles.patenteItem}>
+                  <Text style={styles.patenteText}>{auto.patente}</Text>
+                  <TouchableOpacity onPress={() => eliminarPatentePorPatente(auto.patente)}>
                     <Text style={styles.deleteText}>X</Text>
                   </TouchableOpacity>
                 </View>
               ))}
+
             </View>
           )}
         </View>
@@ -205,6 +267,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 8,
     backgroundColor: '#1e1e2e',
+    marginTop: 8,
   },
   patenteItem: {
     flexDirection: 'row',

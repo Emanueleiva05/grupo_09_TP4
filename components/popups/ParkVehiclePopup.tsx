@@ -4,13 +4,26 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import PopupCard from './PopupCard';
 
+type Auto = {
+  patente: string;
+  zonaId: string;
+  posicion: { latitude: number; longitude: number };
+  fechaEstacionamiento?: Date;
+};
+
 type Props = {
   onClose: () => void;
-  patentes: string[];
+  patentes: Auto[];
 };
 
 export default function ParkVehiclePopup({ onClose, patentes }: Props) {
-  const [patenteSeleccionada, setPatenteSeleccionada] = React.useState(patentes[0] || '');
+  const [patenteSeleccionada, setPatenteSeleccionada] = React.useState('');
+
+  React.useEffect(() => {
+    if (patentes.length > 0) {
+      setPatenteSeleccionada(patentes[0].patente);
+    }
+  }, [patentes]);
 
   return (
     <PopupCard>
@@ -21,15 +34,19 @@ export default function ParkVehiclePopup({ onClose, patentes }: Props) {
         </TouchableOpacity>
       </View>
 
-      <Picker
-        style={styles.picker}
-        selectedValue={patenteSeleccionada}
-        onValueChange={(itemValue) => setPatenteSeleccionada(itemValue)}
-      >
-        {patentes.map((patente) => (
-          <Picker.Item key={patente} label={patente} value={patente} />
-        ))}
-      </Picker>
+      {patentes.length > 0 ? (
+        <Picker
+          style={styles.picker}
+          selectedValue={patenteSeleccionada}
+          onValueChange={(itemValue) => setPatenteSeleccionada(itemValue)}
+        >
+          {patentes.map((auto) => (
+            <Picker.Item key={auto.patente} label={auto.patente} value={auto.patente} />
+          ))}
+        </Picker>
+      ) : (
+        <Text style={{ color: Colors.light.text }}>No hay patentes disponibles</Text>
+      )}
 
       <View style={styles.infoBox}>
         <Text style={styles.infoTitle}>Información de la zona</Text>
@@ -44,7 +61,6 @@ export default function ParkVehiclePopup({ onClose, patentes }: Props) {
     </PopupCard>
   );
 }
-
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
