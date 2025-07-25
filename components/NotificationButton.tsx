@@ -1,16 +1,33 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 
 type Props = {
   count?: number;
+  style?: StyleProp<ViewStyle>;
   onPress?: () => void;
-  style?: object;
 };
 
-export default function NotificationButton({ count = 0, onPress, style }: Props) {
+export default function NotificationButton({ 
+  count = 0, 
+  style, 
+  onPress = () => {}
+}: Props) {
+  const router = useRouter();
+
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    }
+    router.push('/(tabs)/notificaciones');
+  };
+
   return (
-    <TouchableOpacity style={[styles.button, style]} onPress={onPress}>
+    <TouchableOpacity 
+      style={[styles.button, style]} 
+      onPress={handlePress}
+    >
       <Ionicons name="notifications" size={24} color="white" />
       {count > 0 && (
         <View style={styles.badge}>

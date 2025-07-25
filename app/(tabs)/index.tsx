@@ -1,5 +1,6 @@
 import ParkVehiclePopup from '@/components/popups/ParkVehiclePopup';
 import ZonaInfoPopup from '@/components/popups/ZonaInfoPopUp';
+import { Notificacion } from '@/models/Notificacion';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -22,9 +23,11 @@ export default function MapScreen() {
   const [showPopup, setShowPopup] = useState(false);
   const [zonaSeleccionada, setZonaSeleccionada] = useState<Zona | null>(null);
   const [mostrarZonaPopup, setMostrarZonaPopup] = useState(false);
+  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
 
   useEffect(() => {
     cargarZonas();
+    cargarNotificaciones();
   }, []);
 
   const cargarZonas = async () => {
@@ -47,6 +50,18 @@ export default function MapScreen() {
       console.error('Error guardando zonas:', error);
     }
   };
+
+  const cargarNotificaciones = async () => {
+      try {
+        const data = await AsyncStorage.getItem('notificaciones');
+        if (data) {
+          const notificacionesGuardadas = JSON.parse(data);
+          setNotificaciones(notificacionesGuardadas);
+        }
+      } catch (error) {
+        console.error('Error cargando notificaciones:', error);
+      }
+    };
 
   const handleMapPress = (e: MapPressEvent) => {
     if (!esAdmin) return; // Solo admin puede seleccionar puntos
@@ -120,7 +135,7 @@ export default function MapScreen() {
       {!esAdmin && (
         <>
           <CarButton style={styles.buttonCar} onPress={() => setShowPopup(true)} />
-          <NotificationButton style={styles.buttonBell} count={3} onPress={() => console.log('Notificaciones')} />
+          <NotificationButton style={styles.buttonBell} count={notificaciones.length} onPress={() => console.log('Notificaciones')} />
         </>
       )}
 
