@@ -61,11 +61,9 @@ export default function PasswordChangePopoup({ onClose }: Props) {
     
     return (
         <PopupCard>
-            {/* Header */}
             <View> 
                 <ThemedText style={styles.title}>Cambiar contraseña</ThemedText>
             
-                {/* inputs con su label correspondiente */}
                 {errorVacio && <ThemedText style={styles.errorText}>No pueden haber campos vacios</ThemedText>}
                 <ThemedText>Ingresar contraseña actual</ThemedText>
                 <ThemedInput 
@@ -98,7 +96,7 @@ export default function PasswordChangePopoup({ onClose }: Props) {
                 />
                 {errorNueva && <ThemedText style={styles.errorText}>Las contraseñas no coinciden</ThemedText>}
             </View>
-            {/* Botones */}
+            
             <PrimaryButton
                 title="Confirmar"
                 onPress={handleConfirm}

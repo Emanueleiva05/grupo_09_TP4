@@ -1,6 +1,6 @@
+import { useThemeColor } from '@/hooks/useThemeColor';
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
-import { Colors } from '../../constants/Colors';
 
 type Props = {
   children: React.ReactNode;
@@ -8,8 +8,15 @@ type Props = {
 };
 
 export default function PopupCard({ children, style }: Props) {
+  const backgroundColor = useThemeColor({}, 'background');
+  const borderColor = useThemeColor({}, 'secondary');
+  
   return (
-    <View style={[styles.card, style]}>
+    <View style={[
+      styles.card,
+      { backgroundColor, borderColor, borderWidth: 1 },
+      style
+    ]}>
       {children}
     </View>
   );
@@ -17,7 +24,7 @@ export default function PopupCard({ children, style }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.light.background,
+    borderWidth: 1,
     borderRadius: 16,
     padding: 16,
     width: '90%',

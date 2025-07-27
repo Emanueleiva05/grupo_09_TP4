@@ -57,8 +57,6 @@ export default function ConfiguracionScreen() {
     cargarPatentes();
   }, [usuario]);
 
-
-
   const handlePasswordChange = () => setMostrarPopup(true);
 
   const handleLogout = async () => {
@@ -128,73 +126,78 @@ export default function ConfiguracionScreen() {
 
 
   return (
-    <ScrollView
-      style={{ backgroundColor: useThemeColor({}, 'background') }}
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
-      <ThemedView style={styles.container}>
-        <ThemedView style={[styles.profileContainer, { backgroundColor: useThemeColor({}, 'background') }]}>
-          <Image
-            source={{
-              uri: `https://ui-avatars.com/api/?name=${inicial}&length=1&background=1e1e2e&color=89b4fa&rounded=true`,
-            }}
-            style={styles.avatar}
-          />
-          <ThemedText type="title">{usuario?.nombre}</ThemedText>
-          <ThemedText style={{ color: Colors.dark.text }}>{usuario?.email}</ThemedText>
-        </ThemedView>
-
-        <View style={styles.section}>
-          <SectionTitle title="Mis patentes" />
-
-          <View style={styles.patenteInputContainer}>
-            <TextInput
-              style={styles.patenteInput}
-              placeholder="Ingresar patente"
-              value={nuevaPatente}
-              onChangeText={setNuevaPatente}
-              autoCapitalize="characters"
-              keyboardType="default"
-              returnKeyType="done"
+    <View style={{ flex: 1, position: 'relative' }}>
+      <ScrollView
+        style={{ backgroundColor: useThemeColor({}, 'background') }}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <ThemedView style={styles.container}>
+          <ThemedView style={[styles.profileContainer, { backgroundColor: useThemeColor({}, 'background') }]}>
+            <Image
+              source={{
+                uri: `https://ui-avatars.com/api/?name=${inicial}&length=1&background=1e1e2e&color=89b4fa&rounded=true`,
+              }}
+              style={styles.avatar}
             />
-            <TouchableOpacity style={styles.addButton} onPress={agregarPatente}>
-              <Text style={styles.addButtonText}>+</Text>
-            </TouchableOpacity>
+            <ThemedText type="title">{usuario?.nombre}</ThemedText>
+            <ThemedText style={{ color: Colors.dark.text }}>{usuario?.email}</ThemedText>
+          </ThemedView>
+
+          <View style={styles.section}>
+            <SectionTitle title="Mis patentes" />
+
+            <View style={styles.patenteInputContainer}>
+              <TextInput
+                style={styles.patenteInput}
+                placeholder="Ingresar patente"
+                value={nuevaPatente}
+                onChangeText={setNuevaPatente}
+                autoCapitalize="characters"
+                keyboardType="default"
+                returnKeyType="done"
+              />
+              <TouchableOpacity style={styles.addButton} onPress={agregarPatente}>
+                <Text style={styles.addButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+
+            {misPatentes.length > 0 && (
+              <View style={styles.patentesScrollContainer}>
+                {misPatentes.map(auto => (
+                  <View key={auto.patente} style={styles.patenteItem}>
+                    <Text style={styles.patenteText}>{auto.patente}</Text>
+                    <TouchableOpacity onPress={() => eliminarPatentePorPatente(auto.patente)}>
+                      <Text style={styles.deleteText}>X</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+              </View>
+            )}
           </View>
 
-          {misPatentes.length > 0 && (
-            <View style={styles.patentesScrollContainer}>
-              {misPatentes.map(auto => (
-                <View key={auto.patente} style={styles.patenteItem}>
-                  <Text style={styles.patenteText}>{auto.patente}</Text>
-                  <TouchableOpacity onPress={() => eliminarPatentePorPatente(auto.patente)}>
-                    <Text style={styles.deleteText}>X</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
+          <View style={styles.section}>
+            <SectionTitle title="Preferencias" />
+            <SettingsItem icon="moon" text={`Tema: Claro / Oscuro`} />
+            <SettingsItem icon="lock-closed-outline" text="Cambiar contraseña" onPress={handlePasswordChange} />
+            <SettingsItem icon="language" text="Idioma: Español" />
+          </View>
 
-            </View>
-          )}
+          <View style={styles.section}>
+            <SectionTitle title="Soporte y cuenta" />
+            <SettingsItem icon="help-circle" text="Centro de ayuda" />
+            <SettingsItem icon="mail" text="Contacto" />
+            <SettingsItem icon="log-out" text="Cerrar sesión" onPress={handleLogout} />
+          </View>
+        </ThemedView>
+      </ScrollView>
+      {mostrarPopup && (
+        <View style={styles.popupOverlay}>
+          <PasswordChangePopoup onClose={() => setMostrarPopup(false)} />
         </View>
-
-        <View style={styles.section}>
-          <SectionTitle title="Preferencias" />
-          <SettingsItem icon="moon" text={`Tema: Claro / Oscuro`} />
-          <SettingsItem icon="lock-closed-outline" text="Cambiar contraseña" onPress={handlePasswordChange} />
-          <SettingsItem icon="language" text="Idioma: Español" />
-        </View>
-
-        <View style={styles.section}>
-          <SectionTitle title="Soporte y cuenta" />
-          <SettingsItem icon="help-circle" text="Centro de ayuda" />
-          <SettingsItem icon="mail" text="Contacto" />
-          <SettingsItem icon="log-out" text="Cerrar sesión" onPress={handleLogout} />
-        </View>
-      </ThemedView>
-
-      {mostrarPopup && <PasswordChangePopoup onClose={() => setMostrarPopup(false)} />}
-    </ScrollView>
+      )}
+    </View>
   );
 }
 
@@ -286,5 +289,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     paddingHorizontal: 8,
+  },
+  popupOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
   },
 });
