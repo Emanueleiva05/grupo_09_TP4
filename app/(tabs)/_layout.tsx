@@ -1,17 +1,32 @@
+import Routes from '@/constants/Routes';
+import { useAuth } from '@/context/AuthContext';
+import { useThemeColor } from '@/hooks/useThemeColor';
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
-import { Colors } from '../../constants/Colors';
+import { Tabs, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 
 export default function Layout() {
+  const { usuario } = useAuth();
+  const router = useRouter();
+  const textColor = useThemeColor({}, 'text');
+  const tabIconSelected = useThemeColor({}, 'tabIconSelected');
+  const tabIconDefault = useThemeColor({}, 'tabIconDefault');
+  
+  useEffect(() => {
+    if (!usuario) {
+      router.replace(Routes.Login);
+    }
+  }, [usuario]);
+  
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors.light.text,
+        tabBarActiveTintColor: textColor,
         tabBarInactiveTintColor: 'gray',
-        tabBarActiveBackgroundColor: Colors.light.tabIconSelected,
-        tabBarInactiveBackgroundColor: Colors.light.tabIconDefault,
+        tabBarActiveBackgroundColor: tabIconSelected,
+        tabBarInactiveBackgroundColor: tabIconDefault,
         tabBarStyle: {
-          backgroundColor: Colors.light.tabIconDefault, 
+          backgroundColor: tabIconDefault, 
           borderTopWidth: 0, 
           elevation: 0, 
         },
