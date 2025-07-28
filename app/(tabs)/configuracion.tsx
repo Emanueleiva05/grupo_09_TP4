@@ -209,7 +209,7 @@ export default function ConfiguracionScreen() {
           <View style={styles.section}>
             <SectionTitle title="Soporte y cuenta" />
             <SettingsItem icon="help-circle" text="Centro de ayuda" />
-            <SettingsItem icon="help-circle" text="Activar ubicacion" onPress={handleReintentarPermisoUbicacion} />
+            <SettingsItem icon="locate" text="Permitir acceso a ubicación" onPress={handleReintentarPermisoUbicacion} />
             <SettingsItem icon="mail" text="Contacto" />
             <SettingsItem icon="log-out" text="Cerrar sesión" onPress={handleLogout} />
           </View>
