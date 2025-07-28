@@ -1,5 +1,6 @@
 import ParkVehiclePopup from '@/components/popups/ParkVehiclePopup';
 import ZonaInfoPopup from '@/components/popups/ZonaInfoPopUp';
+import { useLocation } from '@/hooks/useLocation';
 import { Notificacion } from '@/models/Notificacion';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
@@ -16,6 +17,7 @@ import { Coordenada, Horario, Zona } from '../../models/Zona';
 export default function MapScreen() {
   const { usuario } = useAuth();
   const esAdmin = usuario?.rol === 'admin';
+  const { location, errorLocation } = useLocation();
 
   const [zonas, setZonas] = useState<Zona[]>([]);
   const [selectedPoints, setSelectedPoints] = useState<Coordenada[]>([]);
@@ -52,16 +54,16 @@ export default function MapScreen() {
   };
 
   const cargarNotificaciones = async () => {
-      try {
-        const data = await AsyncStorage.getItem('notificaciones');
-        if (data) {
-          const notificacionesGuardadas = JSON.parse(data);
-          setNotificaciones(notificacionesGuardadas);
-        }
-      } catch (error) {
-        console.error('Error cargando notificaciones:', error);
+    try {
+      const data = await AsyncStorage.getItem('notificaciones');
+      if (data) {
+        const notificacionesGuardadas = JSON.parse(data);
+        setNotificaciones(notificacionesGuardadas);
       }
-    };
+    } catch (error) {
+      console.error('Error cargando notificaciones:', error);
+    }
+  };
 
   const handleMapPress = (e: MapPressEvent) => {
     if (!esAdmin) return; // Solo admin puede seleccionar puntos
@@ -129,6 +131,20 @@ export default function MapScreen() {
               <Marker key={idx} coordinate={point} />
             ))}
           </>
+        )}
+
+        {location && (
+          <Marker coordinate={location}>
+            <View style={styles.userMarkerOuter}>
+              <View style={styles.userMarkerInner} />
+            </View>
+          </Marker>
+        )}
+
+        {errorLocation && (
+          <View style={styles.errorContainer}>
+            <Text>{errorLocation}</Text>
+          </View>
         )}
       </MapView>
 
@@ -221,7 +237,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#333',
   },
-
   button: {
     flex: 1,
     marginHorizontal: 6,
@@ -236,48 +251,62 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     backgroundColor: '#4a90e2',
   },
-
   buttonDisabled: {
     backgroundColor: '#007AFF',
     elevation: 0,
     shadowOpacity: 0,
   },
-
   buttonText: {
     color: '#fff',
     fontWeight: '700',
     fontSize: 14,
   },
-
   cancelButton: {
     backgroundColor: '#e74c3c',
   },
-
   cancelButtonText: {
     fontWeight: '700',
   },
-
   deleteButton: {
     backgroundColor: '#007AFF',
   },
-
   buttonCar: {
     position: 'absolute',
     bottom: 20,
     right: 20,
   },
-
   buttonBell: {
     position: 'absolute',
     top: 20,
     right: 20,
   },
-
   popupContainer: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  errorContainer: {
+    position: 'absolute',
+    top: 50,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(255,0,0,0.7)',
+    padding: 8,
+    borderRadius: 8,
+  },
+  userMarkerOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0, 122, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userMarkerInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(0, 122, 255, 1)',
   },
 });

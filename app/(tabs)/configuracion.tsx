@@ -3,13 +3,14 @@ import { SettingsItem } from '@/components/SettingsItem';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/context/AuthContext';
+import { useLocation } from '@/hooks/useLocation';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Auto } from '@/models/Auto';
 import { Usuario } from '@/models/Usuario';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import Routes from '../../constants/Routes';
 
@@ -21,6 +22,8 @@ export default function ConfiguracionScreen() {
   const [mostrarPopup, setMostrarPopup] = useState(false);
   const [nuevaPatente, setNuevaPatente] = useState('');
   const [misPatentes, setMisPatentes] = useState<Auto[]>([]);
+
+  const { location, pedirPermiso, errorLocation } = useLocation();
 
   useEffect(() => {
     const cargarPatentes = async () => {
@@ -124,6 +127,25 @@ export default function ConfiguracionScreen() {
     ));
   };
 
+  const handleReintentarPermisoUbicacion = async () => {
+    const permitido = await pedirPermiso();
+    if (!permitido) {
+      Alert.alert(
+        'Permiso denegado',
+        'No se pudo obtener permiso de ubicación. Revisá los ajustes del sistema.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Ir a configuración',
+            onPress: () => Linking.openSettings(),
+          },
+        ]
+      );
+    } else {
+      Alert.alert('Ubicacion activada', 'La app deberia funcionar con normalidad.')
+      console.log(location)
+    }
+  };
 
   return (
     <View style={{ flex: 1, position: 'relative' }}>
@@ -187,6 +209,7 @@ export default function ConfiguracionScreen() {
           <View style={styles.section}>
             <SectionTitle title="Soporte y cuenta" />
             <SettingsItem icon="help-circle" text="Centro de ayuda" />
+            <SettingsItem icon="help-circle" text="Activar ubicacion" onPress={handleReintentarPermisoUbicacion} />
             <SettingsItem icon="mail" text="Contacto" />
             <SettingsItem icon="log-out" text="Cerrar sesión" onPress={handleLogout} />
           </View>
