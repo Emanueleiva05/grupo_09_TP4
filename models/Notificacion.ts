@@ -1,4 +1,6 @@
-type TipoNotificacion = 'multa' | 'pago' | 'recordatorio';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+type TipoNotificacion = 'multa' | 'verificacion' | 'recordatorio';
 
 export class Notificacion {
     id: string;
@@ -55,4 +57,39 @@ export class Notificacion {
     marcarLeida(): void {
         this.leida = true;
     }
+
+    static async obtenerNotificaciones(): Promise<Notificacion[]> {
+    try {
+        const data = await AsyncStorage.getItem('notificaciones');
+        const raw = data ? JSON.parse(data) : [];
+        return raw.map((n: any) => new Notificacion(
+            n.id,
+            n.userId,
+            n.titulo,
+            n.mensaje,
+            n.tipo,
+            n.leida,
+            new Date(n.fecha)
+        ));
+    } catch (error) {
+        console.error('Error al obtener notificaciones:', error);
+        return [];
+        }
+    }
+
+    static async guardarNotificacion(notificacion: Notificacion): Promise<void> {
+    try {
+        const data = await AsyncStorage.getItem('notificaciones');
+        const existentes = data ? JSON.parse(data) : [];
+
+        existentes.push({
+            ...notificacion,
+            fecha: notificacion.fecha.toISOString(),
+        });
+
+        await AsyncStorage.setItem('notificaciones', JSON.stringify(existentes));
+    } catch (error) {
+        console.error('Error al guardar notificación:', error);
+    }
+}
 }
