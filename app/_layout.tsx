@@ -1,10 +1,13 @@
 import { AuthProvider } from '@/context/AuthContext';
+import { PatentesProvider } from '@/context/patentesContext';
 import { Slot } from 'expo-router';
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <Slot />
+      <PatentesProvider>
+        <Slot />
+      </PatentesProvider>
     </AuthProvider>
   );
 }

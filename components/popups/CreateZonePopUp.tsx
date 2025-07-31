@@ -1,3 +1,4 @@
+import { useThemeColor } from '@/hooks/useThemeColor';
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Horario } from '../../models/Zona';
@@ -16,6 +17,13 @@ export default function CrearZonaPopup({ onCancel, onSave }: CrearZonaPopupProps
   const [desde, setDesde] = useState('');
   const [hasta, setHasta] = useState('');
   const [horarios, setHorarios] = useState<Horario[]>([]);
+
+  // Colores del tema
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const inputBackground = useThemeColor({}, 'inputBackground');
+  const primaryColor = useThemeColor({}, 'primary');
+  const buttonBackground = useThemeColor({}, 'buttonBackground');
 
   const handleAddHorario = () => {
     if (dia && desde && hasta) {
@@ -38,22 +46,23 @@ export default function CrearZonaPopup({ onCancel, onSave }: CrearZonaPopupProps
   return (
     <PopupCard>
       <View style={styles.header}>
-        <Text style={styles.title}>Crear Nueva Zona</Text>
+        <Text style={[styles.title, { color: textColor }]}>Crear Nueva Zona</Text>
         <TouchableOpacity onPress={onCancel} style={styles.closeButton}>
-          <Text style={styles.closeButtonText}>X</Text>
+          <Text style={[styles.closeButtonText, { color: textColor }]}>X</Text>
         </TouchableOpacity>
       </View>
 
+      {/** Inputs */}
       <TextInput
         placeholder="Nombre"
-        style={styles.input}
+        style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
         value={nombre}
         onChangeText={setNombre}
         placeholderTextColor="#bbb"
       />
       <TextInput
         placeholder="Precio por Hora"
-        style={styles.input}
+        style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
         value={precioHora}
         onChangeText={setPrecioHora}
         keyboardType="numeric"
@@ -61,41 +70,45 @@ export default function CrearZonaPopup({ onCancel, onSave }: CrearZonaPopupProps
       />
       <TextInput
         placeholder="Color (hex)"
-        style={styles.input}
+        style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
         value={color}
         onChangeText={setColor}
         placeholderTextColor="#bbb"
       />
 
-      <Text style={styles.sectionTitle}>Agregar Horario</Text>
+      <Text style={[styles.sectionTitle, { color: textColor }]}>Agregar Horario</Text>
       <TextInput
         placeholder="Día (Ej: Lunes)"
-        style={styles.input}
+        style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
         value={dia}
         onChangeText={setDia}
         placeholderTextColor="#bbb"
       />
       <TextInput
         placeholder="Desde (HH:mm)"
-        style={styles.input}
+        style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
         value={desde}
         onChangeText={setDesde}
         placeholderTextColor="#bbb"
       />
       <TextInput
         placeholder="Hasta (HH:mm)"
-        style={styles.input}
+        style={[styles.input, { backgroundColor: inputBackground, color: textColor }]}
         value={hasta}
         onChangeText={setHasta}
         placeholderTextColor="#bbb"
       />
 
       <TouchableOpacity
-        style={[styles.button, (!dia || !desde || !hasta) && styles.buttonDisabled]}
+        style={[
+          styles.button,
+          { backgroundColor: buttonBackground },
+          (!dia || !desde || !hasta) && styles.buttonDisabled,
+        ]}
         onPress={handleAddHorario}
         disabled={!dia || !desde || !hasta}
       >
-        <Text style={styles.buttonText}>Agregar Horario</Text>
+        <Text style={[styles.buttonText, { color: textColor }]}>Agregar Horario</Text>
       </TouchableOpacity>
 
       {horarios.length > 0 && (
@@ -104,24 +117,27 @@ export default function CrearZonaPopup({ onCancel, onSave }: CrearZonaPopupProps
           data={horarios}
           keyExtractor={(_, index) => index.toString()}
           renderItem={({ item }) => (
-            <Text style={styles.listItem}>{`${item.dia}: ${item.desde} - ${item.hasta}`}</Text>
+            <Text style={[styles.listItem, { color: textColor }]}>
+              {`${item.dia}: ${item.desde} - ${item.hasta}`}
+            </Text>
           )}
         />
       )}
 
       <View style={styles.buttonsRow}>
-        <TouchableOpacity style={styles.secondaryButton} onPress={onCancel}>
-          <Text style={styles.buttonText}>Cancelar</Text>
+        <TouchableOpacity style={[styles.secondaryButton, { backgroundColor: buttonBackground }]} onPress={onCancel}>
+          <Text style={[styles.buttonText, { color: textColor }]}>Cancelar</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[
             styles.secondaryButton,
+            { backgroundColor: primaryColor },
             (!nombre || !precioHora || horarios.length === 0 || !color) && styles.buttonDisabled,
           ]}
           onPress={handleGuardarZona}
           disabled={!nombre || !precioHora || horarios.length === 0 || !color}
         >
-          <Text style={styles.buttonText}>Guardar Zona</Text>
+          <Text style={[styles.buttonText, { color: textColor }]}>Guardar Zona</Text>
         </TouchableOpacity>
       </View>
     </PopupCard>
@@ -130,12 +146,10 @@ export default function CrearZonaPopup({ onCancel, onSave }: CrearZonaPopupProps
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  title: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  title: { fontSize: 18, fontWeight: 'bold' },
   closeButton: { padding: 8 },
-  closeButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
+  closeButtonText: { fontWeight: 'bold', fontSize: 18 },
   input: {
-    backgroundColor: '#3a3a4c',
-    color: '#fff',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -143,23 +157,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   sectionTitle: {
-    color: '#fff',
     fontWeight: 'bold',
     marginBottom: 6,
     marginTop: 10,
   },
   button: {
-    backgroundColor: '#4a90e2',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
     marginBottom: 10,
   },
   buttonDisabled: {
-    backgroundColor: '#888888',
+    opacity: 0.5,
   },
   buttonText: {
-    color: '#fff',
     fontWeight: 'bold',
     fontSize: 14,
   },
@@ -168,7 +179,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   listItem: {
-    color: '#fff',
     fontSize: 14,
     marginBottom: 2,
   },
@@ -177,7 +187,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   secondaryButton: {
-    backgroundColor: '#4a90e2',
     borderRadius: 8,
     paddingVertical: 12,
     flex: 1,

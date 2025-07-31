@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Colors } from '../../constants/Colors';
+import { useThemeColor } from '../../hooks/useThemeColor';
 import { Zona } from '../../models/Zona';
 import PopupCard from './PopupCard';
 
@@ -12,9 +12,12 @@ type Props = {
   onEliminarZona?: () => void;
 };
 
-
 export default function ZonaInfoPopup({ zona, visible, onClose, esAdmin, onEliminarZona }: Props) {
   if (!zona) return null;
+
+  const textColor = useThemeColor({}, 'text');
+  const inputBackground = useThemeColor({}, 'inputBackground');
+  const buttonBackground = useThemeColor({}, 'buttonBackground');
 
   return (
     <Modal
@@ -26,19 +29,23 @@ export default function ZonaInfoPopup({ zona, visible, onClose, esAdmin, onElimi
       <View style={styles.modalBackground}>
         <PopupCard>
           <View style={styles.header}>
-            <Text style={styles.title}>{zona.nombre}</Text>
+            <Text style={[styles.title, { color: textColor }]}>{zona.nombre}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>X</Text>
+              <Text style={[styles.closeButtonText, { color: textColor }]}>X</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>Precio por hora</Text>
-            <Text style={styles.infoText}>${zona.precioHora.toFixed(2)}</Text>
+          <View style={[styles.infoBox, { backgroundColor: inputBackground }]}>
+            <Text style={[styles.infoTitle, { color: textColor }]}>Precio por hora</Text>
+            <Text style={[styles.infoText, { color: textColor }]}>${zona.precioHora.toFixed(2)}</Text>
 
-            <Text style={[styles.infoTitle, { marginTop: 10 }]}>Horarios permitidos</Text>
+            <Text style={[styles.infoTitle, { color: textColor, marginTop: 10 }]}>
+              Horarios permitidos
+            </Text>
             {zona.horariosPermitidos.map((h, i) => (
-              <Text key={i} style={styles.infoText}>{`${h.dia}: ${h.desde} - ${h.hasta}`}</Text>
+              <Text key={i} style={[styles.infoText, { color: textColor }]}>
+                {`${h.dia}: ${h.desde} - ${h.hasta}`}
+              </Text>
             ))}
           </View>
 
@@ -47,12 +54,15 @@ export default function ZonaInfoPopup({ zona, visible, onClose, esAdmin, onElimi
               style={[styles.closeButtonBottom, { backgroundColor: '#e74c3c', marginTop: 10 }]}
               onPress={onEliminarZona}
             >
-              <Text style={styles.closeButtonText}>Eliminar zona</Text>
+              <Text style={[styles.closeButtonText, { color: textColor }]}>Eliminar zona</Text>
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.closeButtonBottom} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Cerrar</Text>
+          <TouchableOpacity
+            style={[styles.closeButtonBottom, { backgroundColor: buttonBackground }]}
+            onPress={onClose}
+          >
+            <Text style={[styles.closeButtonText, { color: textColor }]}>Cerrar</Text>
           </TouchableOpacity>
         </PopupCard>
       </View>
@@ -67,43 +77,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  title: { 
-    color: Colors.light.text, 
-    fontSize: 16, 
-    fontWeight: 'bold' 
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  closeButton: { 
-    padding: 4 
+  closeButton: {
+    padding: 4,
   },
-  closeButtonText: { 
-    color: Colors.light.text, 
-    fontWeight: 'bold', 
-    fontSize: 16 
+  closeButtonText: {
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   infoBox: {
-    backgroundColor: Colors.light.inputBackground,
     borderRadius: 8,
     padding: 12,
   },
-  infoTitle: { 
-    color: Colors.light.text, 
-    fontWeight: 'bold', 
-    marginBottom: 4 
+  infoTitle: {
+    fontWeight: 'bold',
+    marginBottom: 4,
   },
-  infoText: { 
-    color: Colors.light.text, 
+  infoText: {
     fontSize: 14,
     marginBottom: 2,
   },
   closeButtonBottom: {
     marginTop: 20,
-    backgroundColor: Colors.light.buttonBackground,
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
