@@ -1,9 +1,17 @@
+import { usePatentes } from '@/context/patentesContext';
 import { Coordinates, useLocation } from '@/hooks/useLocation';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Horario, Zona } from '@/models/Zona';
 import { Picker } from '@react-native-picker/picker';
-import React, { useState } from 'react';
-import { Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  Linking,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { ThemedInput } from '../ThemedInput';
 import PopupCard from './PopupCard';
 
@@ -16,49 +24,58 @@ type Auto = {
 
 interface Props {
   onClose: () => void;
-  patentes: Auto[];
+  patentes: Auto[]; 
   zona?: Zona | null;
-  onEstacionar: (patente: string, ubicacion: Coordinates, horas: number) => void;
+  onEstacionar: (auto: Auto, ubicacion: { latitude: number; longitude: number }, horas: number) => Promise<void>;
 }
+
 
 const abrirAppSEM = async () => {
   try {
-    // Intento de abrir la app directamente (si se conoce el scheme)
     const urlApp = 'semla://';
     const soporta = await Linking.canOpenURL(urlApp);
     if (soporta) {
       await Linking.openURL(urlApp);
     } else {
-      // Si no está instalada, abrimos el Play Store (Android)
-      await Linking.openURL('https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata');
+      await Linking.openURL(
+        'https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata'
+      );
     }
   } catch (error) {
     console.error('No se pudo abrir la app del SEM:', error);
   }
 };
 
-
-export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar }: Props) {
-  const [patenteSeleccionada, setPatenteSeleccionada] = React.useState('');
-
-  const [ubicacionManual, setUbicacionManual] = React.useState<Coordinates | null>(null);
+export default function ParkVehiclePopup({
+  onClose,
+  zona,
+  onEstacionar,
+}: Props) {
+  const [patenteSeleccionada, setPatenteSeleccionada] = useState('');
+  const [ubicacionManual, setUbicacionManual] = useState<Coordinates | null>(
+    null
+  );
   const { location } = useLocation();
   const [horasEstacionado, setHorasEstacionado] = useState('');
+
+  const { patentes } = usePatentes();
+  const patentesStrings = patentes.map(p => p.patente);
 
   const textColor = useThemeColor({}, 'text');
   const inputBackground = useThemeColor({}, 'inputBackground');
   const primary = useThemeColor({}, 'primary');
   const secondary = useThemeColor({}, 'secondary');
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (patentes.length > 0) {
       setPatenteSeleccionada(patentes[0].patente);
     }
-  }, [patentes]);
+  }, []);
+
 
   const handleConfirm = () => {
     if (!patenteSeleccionada) {
-      Alert.alert('Error', 'Debe seleccionar un vehículo.');
+      Alert.alert('Error', 'Debe seleccionar una patente.');
       return;
     }
 
@@ -74,36 +91,55 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
       return;
     }
 
-    onEstacionar(patenteSeleccionada, ubicacionFinal, horas);
+    const auto = patentes.find(p => p.patente === patenteSeleccionada);
+    if (!auto) {
+      Alert.alert('Error', 'La patente seleccionada no existe.');
+      return;
+    }
+
+    onEstacionar(auto, ubicacionFinal, horas);
     onClose();
   };
 
   return (
     <PopupCard>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: textColor }]}>Estacionar vehículo</Text>
+        <Text style={[styles.title, { color: textColor }]}>
+          Estacionar vehículo
+        </Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={[styles.closeButtonText, { color: textColor }]}>X</Text>
         </TouchableOpacity>
       </View>
 
-      {patentes.length > 0 ? (
+      {patentesStrings.length > 0 ? (
         <View style={[styles.pickerWrapper, { backgroundColor: inputBackground }]}>
           <Picker
             selectedValue={patenteSeleccionada}
-            onValueChange={(itemValue) => setPatenteSeleccionada(itemValue)}
-            dropdownIconColor={secondary}
+            onValueChange={(itemValue) => {
+              setPatenteSeleccionada(itemValue);
+              const autoSeleccionado = patentes.find(p => p.patente === itemValue);
+              console.log('Picker cambió a patente:', itemValue);
+              console.log('Objeto auto correspondiente:', autoSeleccionado);
+            }}
+            dropdownIconColor={textColor}
+            style={{ color: textColor }}
           >
-            {patentes.map((auto) => (
-              <Picker.Item key={auto.patente} label={auto.patente} value={auto.patente} color={textColor} />
+            {patentes.map(pat => (
+              <Picker.Item
+                key={pat.patente}
+                label={pat.patente}
+                value={pat.patente}
+                color={textColor}
+              />
             ))}
           </Picker>
+
         </View>
       ) : (
         <Text style={{ color: textColor }}>No hay patentes disponibles</Text>
       )}
 
-      {/* Seleccion entre ubicacion actual y punto en el mapa */}
       <View style={[styles.infoBox, { backgroundColor: inputBackground }]}>
         <Text style={[styles.infoTitle, { color: textColor }]}>Ubicación:</Text>
         <View style={styles.locationRow}>
@@ -115,7 +151,7 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
           <TouchableOpacity
             style={[styles.selectButton, { backgroundColor: primary }]}
             onPress={() => {
-              console.log("Seleccionar manualmente...");
+              console.log('Seleccionar manualmente...');
             }}
           >
             <Text style={{ color: textColor }}>Seleccionar</Text>
@@ -124,13 +160,15 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
       </View>
 
       <View style={[styles.infoBox, { backgroundColor: inputBackground }]}>
-        <Text style={[styles.infoTitle, { color: textColor }]}>¿Cuanto tiempo va a estar el auto estacionado?</Text>
+        <Text style={[styles.infoTitle, { color: textColor }]}>
+          ¿Cuánto tiempo va a estar el auto estacionado?
+        </Text>
         <View style={styles.horasRow}>
           <ThemedInput
             style={{ borderWidth: 0 }}
             value={horasEstacionado}
             onChangeText={setHorasEstacionado}
-            placeholder='Ej.: 1'
+            placeholder="Ej.: 1"
             keyboardType="numeric"
             inputMode="numeric"
           />
@@ -139,11 +177,17 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
       </View>
 
       <View style={[styles.infoBox, { backgroundColor: inputBackground }]}>
-        <Text style={[styles.infoTitle, { color: textColor }]}>Información de la zona</Text>
+        <Text style={[styles.infoTitle, { color: textColor }]}>
+          Información de la zona
+        </Text>
         {zona ? (
           <View>
-            <Text style={[styles.infoText, { color: textColor }]}>{zona.nombre}</Text>
-            <Text style={[styles.infoText, { color: textColor }]}>Precio por hora: ${zona.precioHora.toFixed(2)}</Text>
+            <Text style={[styles.infoText, { color: textColor }]}>
+              {zona.nombre}
+            </Text>
+            <Text style={[styles.infoText, { color: textColor }]}>
+              Precio por hora: ${zona.precioHora.toFixed(2)}
+            </Text>
             {zona.horariosPermitidos.map((h: Horario) => (
               <Text key={h.dia} style={[styles.infoText, { color: textColor }]}>
                 {h.dia}: {h.desde} - {h.hasta}
@@ -151,29 +195,32 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
             ))}
           </View>
         ) : (
-          <Text style={{ color: textColor }}>No hay zona disponible en esta ubicación</Text>
+          <Text style={{ color: textColor }}>
+            No hay zona disponible en esta ubicación
+          </Text>
         )}
       </View>
 
-
       <TouchableOpacity
         style={[styles.button, { backgroundColor: zona ? primary : secondary }]}
-        // disabled={!zona}
         onPress={handleConfirm}
       >
         <Text style={{ color: textColor }}>Confirmar estacionamiento</Text>
       </TouchableOpacity>
-
     </PopupCard>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   title: { fontSize: 16, marginBottom: 8 },
   closeButton: { padding: 4 },
   closeButtonText: { fontWeight: 'bold', fontSize: 16 },
-
   infoBox: {
     borderRadius: 8,
     padding: 8,

@@ -25,12 +25,8 @@ export class Auto {
     const ahora = new Date();
     return Math.floor((ahora.getTime() - this.fechaEstacionamiento.getTime()) / 60000);
   }
-  
-  actualizarEstacionamiento(
-    nuevaPosicion: { latitude: number; longitude: number },
-    fecha: Date,
-    horas: number
-  ) {
+
+  actualizarEstacionamiento(nuevaPosicion: { latitude: number; longitude: number }, fecha: Date, horas: number) {
     this.posicion = nuevaPosicion;
     this.fechaEstacionamiento = fecha;
     this.horasEstacionado = horas;

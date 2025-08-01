@@ -1,5 +1,6 @@
 import ParkVehiclePopup from '@/components/popups/ParkVehiclePopup';
 import ZonaInfoPopup from '@/components/popups/ZonaInfoPopUp';
+import { usePatentes } from '@/context/patentesContext';
 import { crearNotificacion } from '@/hooks/notificacionService';
 import { useLocation } from '@/hooks/useLocation';
 import { Auto } from '@/models/Auto';
@@ -28,6 +29,8 @@ export default function MapScreen() {
   const [mostrarZonaPopup, setMostrarZonaPopup] = useState(false);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [autos, setAutos] = useState<Auto[]>([]);
+  const { agregarPatente } = usePatentes();
+
 
   useEffect(() => {
     cargarZonas();
@@ -38,7 +41,17 @@ export default function MapScreen() {
     (async () => {
       const raw = await AsyncStorage.getItem('autosRegistrados');
       if (raw) {
-        setAutos(JSON.parse(raw)); // array de objetos planos
+        const autosPlanos = JSON.parse(raw);
+        const autosClases = autosPlanos.map((a: any) =>
+          new Auto(
+            a.patente,
+            a.zonaId,
+            a.posicion,
+            a.fechaEstacionamiento ? new Date(a.fechaEstacionamiento) : undefined,
+            a.horasEstacionado
+          )
+        );
+        setAutos(autosClases);
       }
     })();
   }, []);
@@ -100,43 +113,25 @@ export default function MapScreen() {
     await guardarZonas(nuevasZonas);
     if (usuario?.id) {
       await crearNotificacion(
-       usuario.id.toString(),
-       'Zona Creada',
-       `La zona "${nuevaZona.nombre}" ha sido creada.`,
-       'recordatorio'
-     );
+        usuario.id.toString(),
+        'Zona Creada',
+        `La zona "${nuevaZona.nombre}" ha sido creada.`,
+        'recordatorio'
+      );
     }
     setSelectedPoints([]);
     setShowCrearZonaPopup(false);
   };
 
-  // const handleEstacionar = async (
-  //   patente: string,
-  //   ubicacion: Coordinates,
-  //   horas: number
-  // ) => {
-  //   // 1. Leer la lista actual
-  //   const raw = await AsyncStorage.getItem('autosRegistrados');
-  //   const lista: Auto[] = raw ? JSON.parse(raw) : [];
-
-  //   // 2. Mapear y actualizar sólo el auto con esa patente
-  //   const actualizado = lista.map(a =>
-  //     a.patente === patente
-  //       ? {
-  //         ...a,
-  //         posicion: ubicacion,
-  //         fechaEstacionamiento: new Date(),
-  //         horasEstacionado: horas,
-  //       }
-  //       : a
-  //   );
-
-  //   // 3. Guardar de vuelta en AsyncStorage
-  //   await AsyncStorage.setItem('autosRegistrados', JSON.stringify(actualizado));
-
-  //   // 4. Refrescar el estado local
-  //   setAutos(actualizado);
-  // };
+  const handleEstacionar = async (
+    auto: Auto,
+    ubicacion: { latitude: number; longitude: number },
+    horas: number
+  ): Promise<void> => {
+    auto.actualizarEstacionamiento(ubicacion, new Date(), horas);
+    auto.posicion = ubicacion;
+    await agregarPatente(auto.patente);
+  };
 
   return (
     <View style={styles.container}>
@@ -207,10 +202,12 @@ export default function MapScreen() {
           <ParkVehiclePopup
             onClose={() => setShowPopup(false)}
             patentes={autos}
-            onEstacionar={()=>{}}
+            zona={zonaSeleccionada}
+            onEstacionar={handleEstacionar}
           />
         </View>
       )}
+
 
       {esAdmin && (
         <View style={styles.bottomBar}>
