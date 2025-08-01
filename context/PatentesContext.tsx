@@ -8,6 +8,7 @@ type PatentesContextType = {
   agregarPatente: (patente: string) => Promise<void>;
   eliminarPatente: (patente: string) => Promise<void>;
   cargarPatentes: () => Promise<void>;
+  actualizarPatente: (auto: Auto) => Promise<void> 
 };
 
 const PatentesContext = createContext<PatentesContextType | undefined>(undefined);
@@ -59,6 +60,15 @@ export const PatentesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     ));
   };
 
+  const actualizarPatente = async (nuevaPatente: Auto) => {
+    const nuevasPatentes = patentes.map(p =>
+      p.patente === nuevaPatente.patente ? nuevaPatente : p
+    );
+    setPatentes(nuevasPatentes);
+    await guardarPatentes(nuevasPatentes);
+  };
+
+
   const agregarPatente = async (patente: string) => {
     if (!usuario) return;
 
@@ -82,10 +92,12 @@ export const PatentesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   return (
-    <PatentesContext.Provider value={{ patentes, agregarPatente, eliminarPatente, cargarPatentes }}>
+    <PatentesContext.Provider value={{ patentes, agregarPatente, eliminarPatente, cargarPatentes, actualizarPatente }}>
       {children}
     </PatentesContext.Provider>
   );
+
+
 };
 
 export const usePatentes = () => {

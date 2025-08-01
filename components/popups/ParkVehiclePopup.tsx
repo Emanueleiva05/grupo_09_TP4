@@ -1,34 +1,26 @@
 import { usePatentes } from '@/context/patentesContext';
 import { Coordinates, useLocation } from '@/hooks/useLocation';
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { Auto } from '@/models/Auto';
 import { Horario, Zona } from '@/models/Zona';
 import { Picker } from '@react-native-picker/picker';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
   Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { ThemedInput } from '../ThemedInput';
 import PopupCard from './PopupCard';
 
-type Auto = {
-  patente: string;
-  zonaId: string;
-  posicion: { latitude: number; longitude: number };
-  fechaEstacionamiento?: Date;
-};
-
 interface Props {
   onClose: () => void;
-  patentes: Auto[]; 
+  patentes: Auto[];
   zona?: Zona | null;
   onEstacionar: (auto: Auto, ubicacion: { latitude: number; longitude: number }, horas: number) => Promise<void>;
 }
-
 
 const abrirAppSEM = async () => {
   try {
@@ -49,16 +41,13 @@ const abrirAppSEM = async () => {
 export default function ParkVehiclePopup({
   onClose,
   zona,
-  onEstacionar,
 }: Props) {
   const [patenteSeleccionada, setPatenteSeleccionada] = useState('');
-  const [ubicacionManual, setUbicacionManual] = useState<Coordinates | null>(
-    null
-  );
+  const [ubicacionManual, setUbicacionManual] = useState<Coordinates | null>(null);
   const { location } = useLocation();
   const [horasEstacionado, setHorasEstacionado] = useState('');
 
-  const { patentes } = usePatentes();
+  const { patentes, actualizarPatente } = usePatentes();
   const patentesStrings = patentes.map(p => p.patente);
 
   const textColor = useThemeColor({}, 'text');
@@ -72,41 +61,10 @@ export default function ParkVehiclePopup({
     }
   }, []);
 
-
-  const handleConfirm = () => {
-    if (!patenteSeleccionada) {
-      Alert.alert('Error', 'Debe seleccionar una patente.');
-      return;
-    }
-
-    const ubicacionFinal = ubicacionManual ?? location;
-    if (!ubicacionFinal) {
-      Alert.alert('Error', 'No se pudo obtener la ubicación.');
-      return;
-    }
-
-    const horas = parseInt(horasEstacionado, 10);
-    if (isNaN(horas) || horas < 1) {
-      Alert.alert('Error', 'Ingrese una cantidad de horas válida (mínimo 1).');
-      return;
-    }
-
-    const auto = patentes.find(p => p.patente === patenteSeleccionada);
-    if (!auto) {
-      Alert.alert('Error', 'La patente seleccionada no existe.');
-      return;
-    }
-
-    onEstacionar(auto, ubicacionFinal, horas);
-    onClose();
-  };
-
   return (
     <PopupCard>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: textColor }]}>
-          Estacionar vehículo
-        </Text>
+        <Text style={[styles.title, { color: textColor }]}>Estacionar vehículo</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={[styles.closeButtonText, { color: textColor }]}>X</Text>
         </TouchableOpacity>
@@ -134,7 +92,6 @@ export default function ParkVehiclePopup({
               />
             ))}
           </Picker>
-
         </View>
       ) : (
         <Text style={{ color: textColor }}>No hay patentes disponibles</Text>
@@ -203,10 +160,42 @@ export default function ParkVehiclePopup({
 
       <TouchableOpacity
         style={[styles.button, { backgroundColor: zona ? primary : secondary }]}
-        onPress={handleConfirm}
+        onPress={async () => {
+          const ubicacionFinal = ubicacionManual ?? location;
+
+          if (!ubicacionFinal) {
+            console.warn('No se pudo obtener la ubicación');
+            return;
+          }
+
+          const autoIndex = patentes.findIndex(p => p.patente === patenteSeleccionada);
+          if (autoIndex === -1) {
+            console.warn('Auto no encontrado');
+            return;
+          }
+
+          const autoOriginal = patentes[autoIndex];
+
+          const autoActualizado = new Auto(
+            autoOriginal.patente,
+            autoOriginal.zonaId,
+            ubicacionFinal,               
+            new Date(),                   
+            autoOriginal.horasEstacionado
+          );
+
+          await actualizarPatente(autoActualizado);
+
+          console.log(`Patente ${autoActualizado.patente} actualizada con posición:`, ubicacionFinal);
+
+          await abrirAppSEM();
+
+          onClose();
+        }}
       >
         <Text style={{ color: textColor }}>Confirmar estacionamiento</Text>
       </TouchableOpacity>
+
     </PopupCard>
   );
 }

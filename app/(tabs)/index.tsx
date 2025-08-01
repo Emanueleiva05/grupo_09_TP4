@@ -32,8 +32,7 @@ export default function MapScreen() {
   const [zonaSeleccionada, setZonaSeleccionada] = useState<Zona | null>(null);
   const [mostrarZonaPopup, setMostrarZonaPopup] = useState(false);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
-  const [autos, setAutos] = useState<Auto[]>([]);
-  const { agregarPatente } = usePatentes();
+  const { patentes, actualizarPatente, agregarPatente, cargarPatentes } = usePatentes();
 
   useEffect(() => {
     cargarZonas();
@@ -41,23 +40,8 @@ export default function MapScreen() {
   }, []);
 
   useEffect(() => {
-    (async () => {
-      const raw = await AsyncStorage.getItem('autosRegistrados');
-      if (raw) {
-        const autosPlanos = JSON.parse(raw);
-        const autosClases = autosPlanos.map((a: any) =>
-          new Auto(
-            a.patente,
-            a.zonaId,
-            a.posicion,
-            a.fechaEstacionamiento ? new Date(a.fechaEstacionamiento) : undefined,
-            a.horasEstacionado
-          )
-        );
-        setAutos(autosClases);
-      }
-    })();
-  }, []);
+    cargarPatentes();
+  }, [cargarPatentes]);
 
   const cargarZonas = async () => {
     try {
@@ -110,6 +94,13 @@ export default function MapScreen() {
     setShowCrearZonaPopup(true);
   };
 
+  const handleEstacionar = async (auto: Auto, ubicacion: { latitude: number; longitude: number }, horas: number) => {
+    auto.actualizarEstacionamiento(ubicacion, new Date(), horas);
+    await actualizarPatente(auto); 
+    setShowPopup(false);
+  };
+
+
   const guardarNuevaZona = async (nombre: string, precioHora: number, horarios: Horario[], color: string) => {
     const nuevaZona = new Zona(uuidv4(), nombre, selectedPoints, horarios, precioHora, color);
     const nuevasZonas = [...zonas, nuevaZona];
@@ -124,16 +115,6 @@ export default function MapScreen() {
     }
     setSelectedPoints([]);
     setShowCrearZonaPopup(false);
-  };
-
-  const handleEstacionar = async (
-    auto: Auto,
-    ubicacion: { latitude: number; longitude: number },
-    horas: number
-  ): Promise<void> => {
-    auto.actualizarEstacionamiento(ubicacion, new Date(), horas);
-    auto.posicion = ubicacion;
-    await agregarPatente(auto.patente);
   };
 
   return (
@@ -211,10 +192,11 @@ export default function MapScreen() {
         <View style={styles.popupContainer}>
           <ParkVehiclePopup
             onClose={() => setShowPopup(false)}
-            patentes={autos}
+            patentes={patentes}
             zona={zonaSeleccionada}
             onEstacionar={handleEstacionar}
           />
+
         </View>
       )}
 
