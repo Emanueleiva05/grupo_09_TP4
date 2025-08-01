@@ -82,9 +82,7 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
     <PopupCard>
       <View style={styles.header}>
         <Text style={[styles.title, { color: textColor }]}>Estacionar vehículo</Text>
-        <Text style={[styles.title, { color: textColor }]}>Estacionar vehículo</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Text style={[styles.closeButtonText, { color: textColor }]}>X</Text>
           <Text style={[styles.closeButtonText, { color: textColor }]}>X</Text>
         </TouchableOpacity>
       </View>
