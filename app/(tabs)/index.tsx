@@ -1,5 +1,6 @@
 import ParkVehiclePopup from '@/components/popups/ParkVehiclePopup';
 import ZonaInfoPopup from '@/components/popups/ZonaInfoPopUp';
+import { crearNotificacion } from '@/hooks/notificacionService';
 import { useLocation } from '@/hooks/useLocation';
 import { Auto } from '@/models/Auto';
 import { Notificacion } from '@/models/Notificacion';
@@ -19,7 +20,6 @@ export default function MapScreen() {
   const { usuario } = useAuth();
   const esAdmin = usuario?.rol === 'admin';
   const { location, errorLocation } = useLocation();
-
   const [zonas, setZonas] = useState<Zona[]>([]);
   const [selectedPoints, setSelectedPoints] = useState<Coordenada[]>([]);
   const [showCrearZonaPopup, setShowCrearZonaPopup] = useState(false);
@@ -94,10 +94,18 @@ export default function MapScreen() {
     setShowCrearZonaPopup(true);
   };
 
-  const guardarNuevaZona = (nombre: string, precioHora: number, horarios: Horario[], color: string) => {
+  const guardarNuevaZona = async (nombre: string, precioHora: number, horarios: Horario[], color: string) => {
     const nuevaZona = new Zona(uuidv4(), nombre, selectedPoints, horarios, precioHora, color);
     const nuevasZonas = [...zonas, nuevaZona];
-    guardarZonas(nuevasZonas);
+    await guardarZonas(nuevasZonas);
+    if (usuario?.id) {
+      await crearNotificacion(
+       usuario.id.toString(),
+       'Zona Creada',
+       `La zona "${nuevaZona.nombre}" ha sido creada.`,
+       'recordatorio'
+     );
+    }
     setSelectedPoints([]);
     setShowCrearZonaPopup(false);
   };
@@ -190,7 +198,7 @@ export default function MapScreen() {
       {!esAdmin && (
         <>
           <CarButton style={styles.buttonCar} onPress={() => setShowPopup(true)} />
-          <NotificationButton style={styles.buttonBell} count={notificaciones.length} onPress={() => console.log('Notificaciones')} />
+          <NotificationButton style={styles.buttonBell} count={notificaciones.filter(notificacion => !notificacion.leida).length} onPress={() => console.log('Notificaciones')} />
         </>
       )}
 
@@ -247,9 +255,17 @@ export default function MapScreen() {
                 {
                   text: 'Eliminar',
                   style: 'destructive',
-                  onPress: () => {
+                  onPress: async () => {
                     const nuevasZonas = zonas.filter(z => z.id !== zonaSeleccionada.id);
                     guardarZonas(nuevasZonas);
+                    if (usuario?.id) {
+                      await crearNotificacion(
+                        usuario.id.toString(),
+                        'Zona Eliminada',
+                        `La zona "${zonaSeleccionada.nombre}" ha sido eliminada.`,
+                        'recordatorio'
+                      );
+                    }
                     setZonaSeleccionada(null);
                     setMostrarZonaPopup(false);
                   },
@@ -259,8 +275,6 @@ export default function MapScreen() {
           }}
         />
       )}
-
-
     </View>
   );
 }

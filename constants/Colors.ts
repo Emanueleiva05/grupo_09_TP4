@@ -8,6 +8,7 @@ export const Colors = {
     tabIconSelected: '#1D263B', // fondo activo
     primary:'#274B63',
     secondary: '#42515C',
+    infoBoxBackground: '#F2F2F2',
   },
   dark: {
     text: '#FFFFFF',
@@ -18,5 +19,6 @@ export const Colors = {
     tabIconSelected: '#1D263B',
     primary:'#274B63', //Cambiar para este modo
     secondary: '#42515C', //Cambiar para este modo
+    infoBoxBackground: '#222222',
   },
 };

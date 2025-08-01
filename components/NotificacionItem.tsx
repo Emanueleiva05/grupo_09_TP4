@@ -1,27 +1,38 @@
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Notificacion } from '@/models/Notificacion';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type Props = {
     notificacion: Notificacion;
+    onMarkAsRead: (id: string) => Promise<void>;
 };
 
-export default function NotificacionItem({ notificacion }: Props) {
+export default function NotificacionItem({ notificacion, onMarkAsRead}: Props) {
     const icono = getIconoTipo(notificacion.tipo);
     const backgroundColor = useThemeColor({}, 'background');
     const textColor = useThemeColor({}, 'text');
     const secondary = useThemeColor({}, 'secondary');
 
+    const iconColor = notificacion.leida ? secondary : textColor;
+
+    const formattedDateTime = new Date(notificacion.fecha).toLocaleString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
     return (
-        <View style={[styles.container, { backgroundColor }]}>
-            <Ionicons name={icono} size={24} color={secondary} style={styles.icon} />
+        <TouchableOpacity style={[styles.container, { backgroundColor }]} onPress={() => onMarkAsRead(notificacion.id)}>
+            <Ionicons name={icono} size={24} color={iconColor} style={styles.icon} />
             <View style={styles.info}>
                 <Text style={[styles.titulo, { color: textColor }]}>{notificacion.titulo}</Text>
                 <Text style={[styles.mensaje, { color: textColor }]}>{notificacion.mensaje}</Text>
-                <Text style={[styles.fecha, { color: textColor }]}>{new Date(notificacion.fecha).toLocaleDateString()}</Text>
+                <Text style={[styles.fecha, { color: textColor }]}>{formattedDateTime}</Text>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 }
 
@@ -29,7 +40,7 @@ function getIconoTipo(tipo: Notificacion['tipo']) {
     switch (tipo) {
         case 'multa':
             return 'alert-circle-outline';
-        case 'pago':
+        case 'verificacion':
             return 'checkmark-circle-outline';
         case 'recordatorio':
             return 'time-outline';

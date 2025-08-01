@@ -3,7 +3,7 @@ import { useThemeColor } from '@/hooks/useThemeColor';
 import { Horario, Zona } from '@/models/Zona';
 import { Picker } from '@react-native-picker/picker';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ThemedInput } from '../ThemedInput';
 import PopupCard from './PopupCard';
 
@@ -20,6 +20,23 @@ interface Props {
   zona?: Zona | null;
   onEstacionar: (patente: string, ubicacion: Coordinates, horas: number) => void;
 }
+
+const abrirAppSEM = async () => {
+  try {
+    // Intento de abrir la app directamente (si se conoce el scheme)
+    const urlApp = 'semla://';
+    const soporta = await Linking.canOpenURL(urlApp);
+    if (soporta) {
+      await Linking.openURL(urlApp);
+    } else {
+      // Si no está instalada, abrimos el Play Store (Android)
+      await Linking.openURL('https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata');
+    }
+  } catch (error) {
+    console.error('No se pudo abrir la app del SEM:', error);
+  }
+};
+
 
 export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar }: Props) {
   const [patenteSeleccionada, setPatenteSeleccionada] = React.useState('');
@@ -65,7 +82,9 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
     <PopupCard>
       <View style={styles.header}>
         <Text style={[styles.title, { color: textColor }]}>Estacionar vehículo</Text>
+        <Text style={[styles.title, { color: textColor }]}>Estacionar vehículo</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <Text style={[styles.closeButtonText, { color: textColor }]}>X</Text>
           <Text style={[styles.closeButtonText, { color: textColor }]}>X</Text>
         </TouchableOpacity>
       </View>
@@ -146,6 +165,7 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
       >
         <Text style={{ color: textColor }}>Confirmar estacionamiento</Text>
       </TouchableOpacity>
+
     </PopupCard>
   );
 }

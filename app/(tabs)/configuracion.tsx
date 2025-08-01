@@ -3,13 +3,11 @@ import { SettingsItem } from '@/components/SettingsItem';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/context/AuthContext';
+import { usePatentes } from '@/context/patentesContext';
 import { useLocation } from '@/hooks/useLocation';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { Auto } from '@/models/Auto';
-import { Usuario } from '@/models/Usuario';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, Image, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import Routes from '../../constants/Routes';
@@ -18,113 +16,17 @@ export default function ConfiguracionScreen() {
   const { usuario, logout, actualizarUsuario } = useAuth();
   const router = useRouter();
   const inicial = usuario?.nombre?.[0]?.toUpperCase() ?? 'U';
+  const { patentes: misPatentes, agregarPatente, eliminarPatente } = usePatentes();
 
-  const [mostrarPopup, setMostrarPopup] = useState(false);
   const [nuevaPatente, setNuevaPatente] = useState('');
-  const [misPatentes, setMisPatentes] = useState<Auto[]>([]);
+  const [mostrarPopup, setMostrarPopup] = useState(false);
 
   const { location, pedirPermiso, errorLocation } = useLocation();
-
-  useEffect(() => {
-    const cargarPatentes = async () => {
-      // Cargo patentes desde AsyncStorage
-      const guardadas = await AsyncStorage.getItem('patentes');
-      let autosDesdeStorage: Auto[] = [];
-
-      if (guardadas) {
-        const autosPlanos = JSON.parse(guardadas);
-        autosDesdeStorage = autosPlanos.map((a: any) => new Auto(
-          a.patente,
-          a.zonaId ?? '',
-          a.posicion ?? { latitude: 0, longitude: 0 },
-          a.fechaEstacionamiento ? new Date(a.fechaEstacionamiento) : undefined
-        ));
-      }
-
-      // También tomo autos del usuario
-      const autosDesdeUsuario = usuario?.autos ?? [];
-
-      // Unifico ambas listas sin duplicados (por patente)
-      const todasPatentesMap = new Map<string, Auto>();
-
-      autosDesdeStorage.forEach(auto => todasPatentesMap.set(auto.patente, auto));
-      autosDesdeUsuario.forEach(auto => todasPatentesMap.set(auto.patente, auto));
-
-      // Paso a array
-      const todasPatentes = Array.from(todasPatentesMap.values());
-
-      setMisPatentes(todasPatentes);
-
-      console.log("Patentes unificadas al cargar:", todasPatentes);
-    };
-    cargarPatentes();
-  }, [usuario]);
-
   const handlePasswordChange = () => setMostrarPopup(true);
 
   const handleLogout = async () => {
     await logout();
     router.push(Routes.Login);
-  };
-
-  const agregarPatente = async () => {
-    const patente = nuevaPatente.trim().toUpperCase();
-    if (!patente) return;
-
-    if (misPatentes.some(auto => auto.patente === patente)) return;
-
-    const nuevoAuto = new Auto(patente, '', { latitude: 0, longitude: 0 });
-
-    const nuevas = [...misPatentes, nuevoAuto];
-    setMisPatentes(nuevas);
-    setNuevaPatente('');
-
-    if (usuario) {
-      const usuarioActualizado = new Usuario(
-        usuario.id,
-        usuario.nombre,
-        usuario.email,
-        usuario.password,
-        usuario.rol
-      );
-      usuarioActualizado.autos = nuevas;
-
-      await actualizarUsuario(usuarioActualizado);
-      await AsyncStorage.setItem('patentes', JSON.stringify(
-        nuevas.map(a => ({
-          patente: a.patente,
-          zonaId: a.zonaId,
-          posicion: a.posicion,
-          fechaEstacionamiento: a.fechaEstacionamiento.toISOString(),
-        }))
-      ));
-
-    }
-  };
-
-  const eliminarPatentePorPatente = async (patente: string) => {
-    if (!usuario) return;
-    const nuevas = misPatentes.filter(auto => auto.patente !== patente);
-    setMisPatentes(nuevas);
-
-    const usuarioActualizado = new Usuario(
-      usuario.id,
-      usuario.nombre,
-      usuario.email,
-      usuario.password,
-      usuario.rol
-    );
-    usuarioActualizado.autos = nuevas;
-
-    await actualizarUsuario(usuarioActualizado);
-    await AsyncStorage.setItem('patentes', JSON.stringify(
-      nuevas.map(a => ({
-        patente: a.patente,
-        zonaId: a.zonaId,
-        posicion: a.posicion,
-        fechaEstacionamiento: a.fechaEstacionamiento.toISOString(),
-      }))
-    ));
   };
 
   const handleReintentarPermisoUbicacion = async () => {
@@ -168,7 +70,6 @@ export default function ConfiguracionScreen() {
 
           <View style={styles.section}>
             <SectionTitle title="Mis patentes" />
-
             <View style={styles.patenteInputContainer}>
               <TextInput
                 style={styles.patenteInput}
@@ -179,7 +80,13 @@ export default function ConfiguracionScreen() {
                 keyboardType="default"
                 returnKeyType="done"
               />
-              <TouchableOpacity style={styles.addButton} onPress={agregarPatente}>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => {
+                  agregarPatente(nuevaPatente);
+                  setNuevaPatente('');
+                }}
+              >
                 <Text style={styles.addButtonText}>+</Text>
               </TouchableOpacity>
             </View>
@@ -189,14 +96,14 @@ export default function ConfiguracionScreen() {
                 {misPatentes.map(auto => (
                   <View key={auto.patente} style={styles.patenteItem}>
                     <Text style={styles.patenteText}>{auto.patente}</Text>
-                    <TouchableOpacity onPress={() => eliminarPatentePorPatente(auto.patente)}>
+                    <TouchableOpacity onPress={() => eliminarPatente(auto.patente)}>
                       <Text style={styles.deleteText}>X</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
-
               </View>
             )}
+
           </View>
 
           <View style={styles.section}>
