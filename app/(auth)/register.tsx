@@ -82,7 +82,7 @@ export default function Register() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <KeyboardAwareScrollView
-          style={{backgroundColor: useThemeColor({}, 'background')}}
+          style={{backgroundColor: backgroundColor}}
           contentContainerStyle={{...styles.scrollContainer, paddingBottom: 24 + insets.bottom}}
           enableOnAndroid={true}
           extraScrollHeight={20}

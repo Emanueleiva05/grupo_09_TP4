@@ -1,6 +1,7 @@
 import ParkVehiclePopup from '@/components/popups/ParkVehiclePopup';
 import ZonaInfoPopup from '@/components/popups/ZonaInfoPopUp';
 import { useLocation } from '@/hooks/useLocation';
+import { Auto } from '@/models/Auto';
 import { Notificacion } from '@/models/Notificacion';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
@@ -26,10 +27,20 @@ export default function MapScreen() {
   const [zonaSeleccionada, setZonaSeleccionada] = useState<Zona | null>(null);
   const [mostrarZonaPopup, setMostrarZonaPopup] = useState(false);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
+  const [autos, setAutos] = useState<Auto[]>([]);
 
   useEffect(() => {
     cargarZonas();
     cargarNotificaciones();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const raw = await AsyncStorage.getItem('autosRegistrados');
+      if (raw) {
+        setAutos(JSON.parse(raw)); // array de objetos planos
+      }
+    })();
   }, []);
 
   const cargarZonas = async () => {
@@ -90,6 +101,34 @@ export default function MapScreen() {
     setSelectedPoints([]);
     setShowCrearZonaPopup(false);
   };
+
+  // const handleEstacionar = async (
+  //   patente: string,
+  //   ubicacion: Coordinates,
+  //   horas: number
+  // ) => {
+  //   // 1. Leer la lista actual
+  //   const raw = await AsyncStorage.getItem('autosRegistrados');
+  //   const lista: Auto[] = raw ? JSON.parse(raw) : [];
+
+  //   // 2. Mapear y actualizar sólo el auto con esa patente
+  //   const actualizado = lista.map(a =>
+  //     a.patente === patente
+  //       ? {
+  //         ...a,
+  //         posicion: ubicacion,
+  //         fechaEstacionamiento: new Date(),
+  //         horasEstacionado: horas,
+  //       }
+  //       : a
+  //   );
+
+  //   // 3. Guardar de vuelta en AsyncStorage
+  //   await AsyncStorage.setItem('autosRegistrados', JSON.stringify(actualizado));
+
+  //   // 4. Refrescar el estado local
+  //   setAutos(actualizado);
+  // };
 
   return (
     <View style={styles.container}>
@@ -159,7 +198,8 @@ export default function MapScreen() {
         <View style={styles.popupContainer}>
           <ParkVehiclePopup
             onClose={() => setShowPopup(false)}
-            patentes={usuario?.autos ?? []}
+            patentes={autos}
+            onEstacionar={()=>{}}
           />
         </View>
       )}
