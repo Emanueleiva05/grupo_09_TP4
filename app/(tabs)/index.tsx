@@ -1,4 +1,5 @@
 import ParkVehiclePopup from '@/components/popups/ParkVehiclePopup';
+import VerifyParkingPopup from '@/components/popups/VerifyParkingPopup'; // Importar VerifyParkingPopup
 import ZonaInfoPopup from '@/components/popups/ZonaInfoPopUp';
 import { usePatentes } from '@/context/patentesContext';
 import { crearNotificacion } from '@/hooks/notificacionService';
@@ -20,17 +21,19 @@ import { Coordenada, Horario, Zona } from '../../models/Zona';
 export default function MapScreen() {
   const { usuario } = useAuth();
   const esAdmin = usuario?.rol === 'admin';
+  const esGuardia = usuario?.rol === 'guardia';
+  const esCliente = usuario?.rol === 'cliente';
   const { location, errorLocation } = useLocation();
   const [zonas, setZonas] = useState<Zona[]>([]);
   const [selectedPoints, setSelectedPoints] = useState<Coordenada[]>([]);
   const [showCrearZonaPopup, setShowCrearZonaPopup] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [showVerifyParkingPopup, setShowVerifyParkingPopup] = useState(false); // Estado nuevo para VerifyParkingPopup
   const [zonaSeleccionada, setZonaSeleccionada] = useState<Zona | null>(null);
   const [mostrarZonaPopup, setMostrarZonaPopup] = useState(false);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [autos, setAutos] = useState<Auto[]>([]);
   const { agregarPatente } = usePatentes();
-
 
   useEffect(() => {
     cargarZonas();
@@ -190,11 +193,18 @@ export default function MapScreen() {
         )}
       </MapView>
 
-      {!esAdmin && (
-        <>
-          <CarButton style={styles.buttonCar} onPress={() => setShowPopup(true)} />
-          <NotificationButton style={styles.buttonBell} count={notificaciones.filter(notificacion => !notificacion.leida).length} onPress={() => console.log('Notificaciones')} />
-        </>
+      {!esAdmin && !esGuardia && (
+        <NotificationButton
+          style={styles.buttonBell}
+          count={notificaciones.filter(notificacion => !notificacion.leida).length}
+          onPress={() => console.log('Notificaciones')}
+        />
+      )}
+
+      {esGuardia ? (
+        <CarButton style={styles.buttonCar} onPress={() => setShowVerifyParkingPopup(true)} />
+      ) : (
+        <CarButton style={styles.buttonCar} onPress={() => setShowPopup(true)} />
       )}
 
       {showPopup && (
@@ -208,6 +218,11 @@ export default function MapScreen() {
         </View>
       )}
 
+      {showVerifyParkingPopup && (
+        <View style={styles.popupContainer}>
+          <VerifyParkingPopup onClose={() => setShowVerifyParkingPopup(false)} />
+        </View>
+      )}
 
       {esAdmin && (
         <View style={styles.bottomBar}>

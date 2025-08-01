@@ -38,10 +38,7 @@ export const PatentesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         );
         return auto;
       });
-
-
     }
-
     setPatentes(autos);
   };
 
@@ -60,7 +57,6 @@ export const PatentesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         horasEstacionado: a.horasEstacionado,
       }))
     ));
-
   };
 
   const agregarPatente = async (patente: string) => {
@@ -73,6 +69,7 @@ export const PatentesProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const nuevasPatentes = [...patentes, nuevoAuto];
 
     setPatentes(nuevasPatentes);
+    console.log(nuevasPatentes);
     await guardarPatentes(nuevasPatentes);
   };
 
