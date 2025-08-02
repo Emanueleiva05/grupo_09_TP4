@@ -1,17 +1,24 @@
 import ParkedButton from '@/components/ParkedButton';
 import ParkedVehiclePopup from '@/components/popups/ParkedVehiclePopup';
 import ParkVehiclePopup from '@/components/popups/ParkVehiclePopup';
-import VerifyParkingPopup from '@/components/popups/VerifyParkingPopup'; // Importar VerifyParkingPopup
+import VerifyParkingPopup from '@/components/popups/VerifyParkingPopup';
 import ZonaInfoPopup from '@/components/popups/ZonaInfoPopUp';
 import { usePatentes } from '@/context/PatentesContext';
 import { crearNotificacion } from '@/hooks/notificacionService';
 import { useLocation } from '@/hooks/useLocation';
 import { Auto } from '@/models/Auto';
 import { Notificacion } from '@/models/Notificacion';
+import { obtenerRuta } from '@/services/mapService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { MapPressEvent, Marker, Polygon } from 'react-native-maps';
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import MapView, { MapPressEvent, Marker, Polygon, Polyline } from 'react-native-maps'; // IMPORTAR Polyline
 import { v4 as uuidv4 } from 'uuid';
 import CarButton from '../../components/CarButton';
 import NotificationButton from '../../components/NotificationButton';
@@ -31,11 +38,18 @@ export default function MapScreen() {
   const [showCrearZonaPopup, setShowCrearZonaPopup] = useState(false);
   const [showParkingPopup, setShowParkingPopup] = useState(false);
   const [showParkedPopup, setShowParkedPopup] = useState(false);
-  const [showVerifyParkingPopup, setShowVerifyParkingPopup] = useState(false); // Estado nuevo para VerifyParkingPopup
+  const [showVerifyParkingPopup, setShowVerifyParkingPopup] = useState(false);
   const [zonaSeleccionada, setZonaSeleccionada] = useState<Zona | null>(null);
   const [mostrarZonaPopup, setMostrarZonaPopup] = useState(false);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const { patentes, actualizarPatente, agregarPatente, cargarPatentes } = usePatentes();
+
+  // NUEVOS ESTADOS para ruta y auto guiado
+  const [rutaCoords, setRutaCoords] = useState<Coordenada[]>([]);
+  const [autoGuiado, setAutoGuiado] = useState<Auto | null>(null);
+
+  // Aquí poné tu API KEY real de Google Maps
+  const apiKey = 'TU_API_KEY_GOOGLE_MAPS';
 
   useEffect(() => {
     cargarZonas();
@@ -97,14 +111,43 @@ export default function MapScreen() {
     setShowCrearZonaPopup(true);
   };
 
-  const handleEstacionar = async (auto: Auto, ubicacion: { latitude: number; longitude: number }, horas: number) => {
+  const handleEstacionar = async (
+    auto: Auto,
+    ubicacion: { latitude: number; longitude: number },
+    horas: number
+  ) => {
     auto.actualizarEstacionamiento(ubicacion, new Date(), horas);
-    await actualizarPatente(auto); 
+    await actualizarPatente(auto);
     setShowParkingPopup(false);
   };
 
+  // NUEVA FUNCION: cuando el usuario pide guiar al auto
+  const manejarGuiar = async (auto: Auto) => {
+    if (!location) {
+      Alert.alert('Error', 'No se pudo obtener tu ubicación actual.');
+      return;
+    }
+    try {
+      const ruta = await obtenerRuta(location, auto.posicion, apiKey);
+      if (ruta.length === 0) {
+        Alert.alert('Ruta', 'No se pudo obtener la ruta.');
+        return;
+      }
+      setRutaCoords(ruta);
+      setAutoGuiado(auto);
+      setShowParkedPopup(false); // opcional cerrar popup
+    } catch (error) {
+      Alert.alert('Error', 'Ocurrió un error al obtener la ruta.');
+      console.error(error);
+    }
+  };
 
-  const guardarNuevaZona = async (nombre: string, precioHora: number, horarios: Horario[], color: string) => {
+  const guardarNuevaZona = async (
+    nombre: string,
+    precioHora: number,
+    horarios: Horario[],
+    color: string
+  ) => {
     const nuevaZona = new Zona(uuidv4(), nombre, selectedPoints, horarios, precioHora, color);
     const nuevasZonas = [...zonas, nuevaZona];
     await guardarZonas(nuevasZonas);
@@ -170,6 +213,14 @@ export default function MapScreen() {
           </Marker>
         )}
 
+        {rutaCoords.length > 0 && (
+          <Polyline
+            coordinates={rutaCoords}
+            strokeColor="#007AFF"
+            strokeWidth={4}
+          />
+        )}
+
         {errorLocation && (
           <View style={styles.errorContainer}>
             <Text>{errorLocation}</Text>
@@ -180,7 +231,7 @@ export default function MapScreen() {
       {!esAdmin && !esGuardia && (
         <NotificationButton
           style={styles.buttonBell}
-          count={notificaciones.filter(notificacion => !notificacion.leida).length}
+          count={notificaciones.filter((notificacion) => !notificacion.leida).length}
           onPress={() => console.log('Notificaciones')}
         />
       )}
@@ -188,9 +239,12 @@ export default function MapScreen() {
       {esGuardia ? (
         <CarButton style={styles.buttonCar} onPress={() => setShowVerifyParkingPopup(true)} />
       ) : (
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between'}}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <CarButton style={styles.buttonCar} onPress={() => setShowParkingPopup(true)} />
-          <ParkedButton style={styles.buttonParked} onPress={() => setShowParkedPopup(true)} />
+          <ParkedButton
+            style={styles.buttonParked}
+            onPress={() => setShowParkedPopup(true)}
+          />
         </View>
       )}
 
@@ -199,10 +253,11 @@ export default function MapScreen() {
           <ParkedVehiclePopup
             onClose={() => setShowParkedPopup(false)}
             patentes={patentes}
+            onGuiar={manejarGuiar}  // <-- PASAMOS la función para guiar
           />
         </View>
       )}
-      
+
       {showParkingPopup && (
         <View style={styles.popupContainer}>
           <ParkVehiclePopup
@@ -211,7 +266,6 @@ export default function MapScreen() {
             zona={zonaSeleccionada}
             onEstacionar={handleEstacionar}
           />
-
         </View>
       )}
 
@@ -231,7 +285,10 @@ export default function MapScreen() {
             <Text style={styles.buttonText}>Crear</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={cancelarSeleccion}>
+          <TouchableOpacity
+            style={[styles.button, styles.cancelButton]}
+            onPress={cancelarSeleccion}
+          >
             <Text style={[styles.buttonText, styles.cancelButtonText]}>Cancelar</Text>
           </TouchableOpacity>
         </View>
@@ -256,31 +313,27 @@ export default function MapScreen() {
           }}
           esAdmin={esAdmin}
           onEliminarZona={() => {
-            Alert.alert(
-              'Eliminar zona',
-              '¿Estás seguro de que querés eliminar esta zona?',
-              [
-                { text: 'Cancelar', style: 'cancel' },
-                {
-                  text: 'Eliminar',
-                  style: 'destructive',
-                  onPress: async () => {
-                    const nuevasZonas = zonas.filter(z => z.id !== zonaSeleccionada.id);
-                    guardarZonas(nuevasZonas);
-                    if (usuario?.id) {
-                      await crearNotificacion(
-                        usuario.id.toString(),
-                        'Zona Eliminada',
-                        `La zona "${zonaSeleccionada.nombre}" ha sido eliminada.`,
-                        'recordatorio'
-                      );
-                    }
-                    setZonaSeleccionada(null);
-                    setMostrarZonaPopup(false);
-                  },
+            Alert.alert('Eliminar zona', '¿Estás seguro de que querés eliminar esta zona?', [
+              { text: 'Cancelar', style: 'cancel' },
+              {
+                text: 'Eliminar',
+                style: 'destructive',
+                onPress: async () => {
+                  const nuevasZonas = zonas.filter((z) => z.id !== zonaSeleccionada.id);
+                  guardarZonas(nuevasZonas);
+                  if (usuario?.id) {
+                    await crearNotificacion(
+                      usuario.id.toString(),
+                      'Zona Eliminada',
+                      `La zona "${zonaSeleccionada.nombre}" ha sido eliminada.`,
+                      'recordatorio'
+                    );
+                  }
+                  setZonaSeleccionada(null);
+                  setMostrarZonaPopup(false);
                 },
-              ],
-            );
+              },
+            ]);
           }}
         />
       )}
@@ -330,9 +383,6 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontWeight: '700',
   },
-  deleteButton: {
-    backgroundColor: '#007AFF',
-  },
   buttonCar: {
     position: 'absolute',
     bottom: 20,
@@ -350,7 +400,10 @@ const styles = StyleSheet.create({
   },
   popupContainer: {
     position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
