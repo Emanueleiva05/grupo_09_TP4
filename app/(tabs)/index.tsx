@@ -1,7 +1,9 @@
+import ParkedButton from '@/components/ParkedButton';
+import ParkedVehiclePopup from '@/components/popups/ParkedVehiclePopup';
 import ParkVehiclePopup from '@/components/popups/ParkVehiclePopup';
 import VerifyParkingPopup from '@/components/popups/VerifyParkingPopup'; // Importar VerifyParkingPopup
 import ZonaInfoPopup from '@/components/popups/ZonaInfoPopUp';
-import { usePatentes } from '@/context/patentesContext';
+import { usePatentes } from '@/context/PatentesContext';
 import { crearNotificacion } from '@/hooks/notificacionService';
 import { useLocation } from '@/hooks/useLocation';
 import { Auto } from '@/models/Auto';
@@ -27,7 +29,8 @@ export default function MapScreen() {
   const [zonas, setZonas] = useState<Zona[]>([]);
   const [selectedPoints, setSelectedPoints] = useState<Coordenada[]>([]);
   const [showCrearZonaPopup, setShowCrearZonaPopup] = useState(false);
-  const [showPopup, setShowPopup] = useState(false);
+  const [showParkingPopup, setShowParkingPopup] = useState(false);
+  const [showParkedPopup, setShowParkedPopup] = useState(false);
   const [showVerifyParkingPopup, setShowVerifyParkingPopup] = useState(false); // Estado nuevo para VerifyParkingPopup
   const [zonaSeleccionada, setZonaSeleccionada] = useState<Zona | null>(null);
   const [mostrarZonaPopup, setMostrarZonaPopup] = useState(false);
@@ -97,7 +100,7 @@ export default function MapScreen() {
   const handleEstacionar = async (auto: Auto, ubicacion: { latitude: number; longitude: number }, horas: number) => {
     auto.actualizarEstacionamiento(ubicacion, new Date(), horas);
     await actualizarPatente(auto); 
-    setShowPopup(false);
+    setShowParkingPopup(false);
   };
 
 
@@ -185,13 +188,25 @@ export default function MapScreen() {
       {esGuardia ? (
         <CarButton style={styles.buttonCar} onPress={() => setShowVerifyParkingPopup(true)} />
       ) : (
-        <CarButton style={styles.buttonCar} onPress={() => setShowPopup(true)} />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between'}}>
+          <CarButton style={styles.buttonCar} onPress={() => setShowParkingPopup(true)} />
+          <ParkedButton style={styles.buttonParked} onPress={() => setShowParkedPopup(true)} />
+        </View>
       )}
 
-      {showPopup && (
+      {showParkedPopup && (
+        <View style={styles.popupContainer}>
+          <ParkedVehiclePopup
+            onClose={() => setShowParkedPopup(false)}
+            patentes={patentes}
+          />
+        </View>
+      )}
+      
+      {showParkingPopup && (
         <View style={styles.popupContainer}>
           <ParkVehiclePopup
-            onClose={() => setShowPopup(false)}
+            onClose={() => setShowParkingPopup(false)}
             patentes={patentes}
             zona={zonaSeleccionada}
             onEstacionar={handleEstacionar}
@@ -322,6 +337,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 20,
     right: 20,
+  },
+  buttonParked: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
   },
   buttonBell: {
     position: 'absolute',

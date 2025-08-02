@@ -1,4 +1,4 @@
-import { usePatentes } from '@/context/patentesContext';
+import { usePatentes } from '@/context/PatentesContext';
 import { Coordinates, useLocation } from '@/hooks/useLocation';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { Auto } from '@/models/Auto';
@@ -42,13 +42,17 @@ export default function ParkVehiclePopup({
   onClose,
   zona,
 }: Props) {
-  const [patenteSeleccionada, setPatenteSeleccionada] = useState('');
   const [ubicacionManual, setUbicacionManual] = useState<Coordinates | null>(null);
   const { location } = useLocation();
   const [horasEstacionado, setHorasEstacionado] = useState('');
 
+  const [patenteSeleccionada, setPatenteSeleccionada] = useState('');
   const { patentes, actualizarPatente } = usePatentes();
-  const patentesStrings = patentes.map(p => p.patente);
+  const patentesFiltradas = patentes.filter(
+    p => p.posicion.latitude === 0 && p.posicion.longitude === 0
+  );
+  const patentesStrings = patentesFiltradas.map(p => p.patente);
+
 
   const textColor = useThemeColor({}, 'text');
   const inputBackground = useThemeColor({}, 'inputBackground');
@@ -56,10 +60,10 @@ export default function ParkVehiclePopup({
   const secondary = useThemeColor({}, 'secondary');
 
   useEffect(() => {
-    if (patentes.length > 0) {
-      setPatenteSeleccionada(patentes[0].patente);
-    }
-  }, []);
+      if (patentesFiltradas.length > 0) {
+        setPatenteSeleccionada(patentesFiltradas[0].patente);
+      }
+    }, [patentesFiltradas]);
 
   return (
     <PopupCard>
@@ -76,25 +80,26 @@ export default function ParkVehiclePopup({
             selectedValue={patenteSeleccionada}
             onValueChange={(itemValue) => {
               setPatenteSeleccionada(itemValue);
-              const autoSeleccionado = patentes.find(p => p.patente === itemValue);
+              const autoSeleccionado = patentesFiltradas.find(p => p.patente === itemValue);
               console.log('Picker cambió a patente:', itemValue);
               console.log('Objeto auto correspondiente:', autoSeleccionado);
             }}
             dropdownIconColor={textColor}
             style={{ color: textColor }}
           >
-            {patentes.map(pat => (
+            {patentesFiltradas.map(pat => (
               <Picker.Item
                 key={pat.patente}
                 label={pat.patente}
                 value={pat.patente}
-                color={textColor}
               />
             ))}
           </Picker>
         </View>
       ) : (
-        <Text style={{ color: textColor }}>No hay patentes disponibles</Text>
+        <View style={[styles.pickerWrapper, { backgroundColor: inputBackground, padding: 8 }]}>
+          <Text style={{ color: textColor }}>No hay patentes disponibles</Text>
+        </View>
       )}
 
       <View style={[styles.infoBox, { backgroundColor: inputBackground }]}>
@@ -179,9 +184,9 @@ export default function ParkVehiclePopup({
           const autoActualizado = new Auto(
             autoOriginal.patente,
             autoOriginal.zonaId,
-            ubicacionFinal,               
-            new Date(),                   
-            autoOriginal.horasEstacionado
+            ubicacionFinal,
+            new Date(),
+            parseInt(horasEstacionado, 10) || 0
           );
 
           await actualizarPatente(autoActualizado);

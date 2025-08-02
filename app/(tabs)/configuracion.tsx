@@ -3,7 +3,7 @@ import { SettingsItem } from '@/components/SettingsItem';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useAuth } from '@/context/AuthContext';
-import { usePatentes } from '@/context/patentesContext';
+import { usePatentes } from '@/context/PatentesContext';
 import { useLocation } from '@/hooks/useLocation';
 import { useThemeColor } from '@/hooks/useThemeColor';
 import { useRouter } from 'expo-router';

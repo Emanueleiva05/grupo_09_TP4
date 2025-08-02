@@ -1,11 +1,14 @@
+import { usePatentes } from '@/context/PatentesContext';
+import { Auto } from '@/models/Auto';
 import { Picker } from '@react-native-picker/picker';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useThemeColor } from '../../hooks/useThemeColor';
 import PopupCard from './PopupCard';
 
 type Props = {
   onClose: () => void;
+  patentes: Auto[];
 };
 
 export default function ParkedVehiclePopup({ onClose }: Props) {
@@ -14,27 +17,57 @@ export default function ParkedVehiclePopup({ onClose }: Props) {
   const buttonBackground = useThemeColor({}, 'buttonBackground');
   const infoBoxBackground = useThemeColor({}, 'infoBoxBackground');
 
+  const [patenteSeleccionada, setPatenteSeleccionada] = useState('');
+  const { patentes, actualizarPatente } = usePatentes();
+  const patentesFiltradas = patentes.filter(
+    p => p.posicion.latitude !== 0 && p.posicion.longitude !== 0
+  );
+  const patentesStrings = patentesFiltradas.map(p => p.patente);
+
+
+  useEffect(() => {
+    if (patentesFiltradas.length > 0) {
+      setPatenteSeleccionada(patentesFiltradas[0].patente);
+    }
+  }, [patentesFiltradas]);
+
+
   return (
     <PopupCard>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: textColor }]}>Vehículo estacionado</Text>
+        <Text style={[styles.title, { color: textColor }]}>Seleccione un vehículo estacionado</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={[styles.closeButtonText, { color: textColor }]}>X</Text>
         </TouchableOpacity>
       </View>
 
-      <Picker
-        style={[
-          styles.picker,
-          {
-            backgroundColor: inputBackground,
-            color: textColor,
-          },
-        ]}
-      >
-        <Picker.Item label="XXX 000" value="xxx000" />
-        <Picker.Item label="YYY 111" value="yyy111" />
-      </Picker>
+      {patentesStrings.length > 0 ? (
+        <View style={[styles.pickerWrapper, { backgroundColor: inputBackground }]}>
+          <Picker
+            selectedValue={patenteSeleccionada}
+            onValueChange={(itemValue) => {
+              setPatenteSeleccionada(itemValue);
+              const autoSeleccionado = patentesFiltradas.find(p => p.patente === itemValue);
+              console.log('Picker cambió a patente:', itemValue);
+              console.log('Objeto auto correspondiente:', autoSeleccionado);
+            }}
+            dropdownIconColor={textColor}
+            style={{ color: textColor }}
+          >
+            {patentesFiltradas.map(pat => (
+              <Picker.Item
+                key={pat.patente}
+                label={pat.patente}
+                value={pat.patente}
+              />
+            ))}
+          </Picker>
+        </View>
+      ) : (
+        <View style={[styles.pickerWrapper, { backgroundColor: inputBackground, padding: 8 }]}>
+          <Text style={{ color: textColor }}>No hay patentes disponibles</Text>
+        </View>
+      )}
 
       <View style={[styles.infoBox, { backgroundColor: infoBoxBackground }]}>
         <Text style={[styles.infoTitle, { color: textColor }]}>Información de la zona</Text>
@@ -82,4 +115,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   buttonText: { fontWeight: 'bold', fontSize: 12 },
+  pickerWrapper: {
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
 });

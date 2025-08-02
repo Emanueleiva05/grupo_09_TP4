@@ -57,9 +57,9 @@ export default function VerifyParkingPopup({ onClose }: Props) {
             (posicion.latitude === 0 && posicion.longitude === 0) ||
             (posicion.lat === 0 && posicion.lon === 0) // por si usa keys diferentes
           ) {
-            setMensajePago(`Patente ${patenteBuscada} encontrada pero SIN pago registrado.`);
+            setMensajePago(`Patente ${patenteBuscada} encontrada pero NO tiene un estacionamiento registrado.`);
           } else {
-            setMensajePago(`Patente ${patenteBuscada} encontrada con pago registrado.`);
+            setMensajePago(`Patente ${patenteBuscada} encontrada con estacionamiento registrado.`);
           }
           setBuscando(false);
           return;
