@@ -1,3 +1,4 @@
+import { usePatentes } from '@/context/PatentesContext';
 import { useLocation } from '@/hooks/useLocation';
 import { Auto } from '@/models/Auto';
 import { Picker } from '@react-native-picker/picker';
@@ -9,10 +10,11 @@ import PopupCard from './PopupCard';
 type Props = {
   onClose: () => void;
   patentes: Auto[];
-  onGuiar: (auto: Auto) => void; // nuevo prop
+  onGuiar: (auto: Auto) => void;
+  onLimpiarRuta: () => void;
 };
 
-export default function ParkedVehiclePopup({ onClose, patentes, onGuiar }: Props) {
+export default function ParkedVehiclePopup({ onClose, patentes, onGuiar, onLimpiarRuta }: Props) {
   const textColor = useThemeColor({}, 'text');
   const inputBackground = useThemeColor({}, 'inputBackground');
   const buttonBackground = useThemeColor({}, 'buttonBackground');
@@ -20,6 +22,7 @@ export default function ParkedVehiclePopup({ onClose, patentes, onGuiar }: Props
 
   const [patenteSeleccionada, setPatenteSeleccionada] = useState('');
   const [autoSeleccionado, setAutoSeleccionado] = useState<Auto | null>(null);
+  const { actualizarPatente } = usePatentes();
 
   const { location } = useLocation();
 
@@ -36,6 +39,29 @@ export default function ParkedVehiclePopup({ onClose, patentes, onGuiar }: Props
       setAutoSeleccionado(primera);
     }
   }, [patentesFiltradas]);
+
+  const resetearAuto = async () => {
+    if (!autoSeleccionado) return;
+
+    const autoReseteado = new Auto(
+      autoSeleccionado.patente,
+      '',
+      { latitude: 0, longitude: 0 },
+      new Date(),
+      0
+    );
+
+    await actualizarPatente(autoReseteado);
+
+    setAutoSeleccionado(autoReseteado);
+
+    onLimpiarRuta();
+
+    Alert.alert(
+      'Auto reseteado',
+      `Se ha reseteado la información del auto ${autoReseteado.patente}`
+    );
+  };
 
   return (
     <PopupCard>
@@ -81,6 +107,7 @@ export default function ParkedVehiclePopup({ onClose, patentes, onGuiar }: Props
       </View>
 
       <View style={styles.buttonsRow}>
+        {/* Botón Guiar */}
         <TouchableOpacity
           disabled={!location || !autoSeleccionado}
           style={[
@@ -97,12 +124,26 @@ export default function ParkedVehiclePopup({ onClose, patentes, onGuiar }: Props
               Alert.alert('Auto', 'No se pudo obtener la posición del auto.');
               return;
             }
-            onGuiar(autoSeleccionado);  // <-- aquí usamos la función del padre
+            onGuiar(autoSeleccionado);
           }}
         >
           <Text style={[styles.buttonText, { color: textColor }]}>Guiar al vehículo</Text>
         </TouchableOpacity>
+
+        {/* Botón Reset */}
+        <TouchableOpacity
+          disabled={!autoSeleccionado}
+          style={[
+            styles.secondaryButton,
+            { backgroundColor: buttonBackground },
+            !autoSeleccionado && { opacity: 0.5 },
+          ]}
+          onPress={resetearAuto}
+        >
+          <Text style={[styles.buttonText, { color: textColor }]}>Ya me fui</Text>
+        </TouchableOpacity>
       </View>
+
     </PopupCard>
   );
 }

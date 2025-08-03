@@ -18,7 +18,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import MapView, { MapPressEvent, Marker, Polygon, Polyline } from 'react-native-maps'; // IMPORTAR Polyline
+import MapView, { MapPressEvent, Marker, Polygon, Polyline } from 'react-native-maps';
 import { v4 as uuidv4 } from 'uuid';
 import CarButton from '../../components/CarButton';
 import NotificationButton from '../../components/NotificationButton';
@@ -121,7 +121,6 @@ export default function MapScreen() {
     setShowParkingPopup(false);
   };
 
-  // NUEVA FUNCION: cuando el usuario pide guiar al auto
   const manejarGuiar = async (auto: Auto) => {
     if (!location) {
       Alert.alert('Error', 'No se pudo obtener tu ubicación actual.');
@@ -135,7 +134,7 @@ export default function MapScreen() {
       }
       setRutaCoords(ruta);
       setAutoGuiado(auto);
-      setShowParkedPopup(false); // opcional cerrar popup
+      setShowParkedPopup(false);
     } catch (error) {
       Alert.alert('Error', 'Ocurrió un error al obtener la ruta.');
       console.error(error);
@@ -161,6 +160,10 @@ export default function MapScreen() {
     }
     setSelectedPoints([]);
     setShowCrearZonaPopup(false);
+  };
+
+  const limpiarRuta = () => {
+    setRutaCoords([]);
   };
 
   return (
@@ -253,7 +256,8 @@ export default function MapScreen() {
           <ParkedVehiclePopup
             onClose={() => setShowParkedPopup(false)}
             patentes={patentes}
-            onGuiar={manejarGuiar}  // <-- PASAMOS la función para guiar
+            onGuiar={manejarGuiar}
+            onLimpiarRuta={limpiarRuta}
           />
         </View>
       )}
