@@ -1,11 +1,12 @@
 import { Coordinates, useLocation } from '@/hooks/useLocation';
 import { useThemeColor } from '@/hooks/useThemeColor';
-import { Horario, Zona } from '@/models/Zona';
+import { Coordenada, Horario, Zona } from '@/models/Zona';
 import { Picker } from '@react-native-picker/picker';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ThemedInput } from '../ThemedInput';
 import PopupCard from './PopupCard';
+
 
 type Auto = {
   patente: string;
@@ -19,6 +20,18 @@ interface Props {
   patentes: Auto[];
   zona?: Zona | null;
   onEstacionar: (patente: string, ubicacion: Coordinates, horas: number) => void;
+  posicion: Coordenada,
+}
+
+interface Direccion {
+  house_number?: string;
+  road?: string;
+  city?: string;
+  state_district?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+  country_code?: string;
 }
 
 const abrirAppSEM = async () => {
@@ -37,11 +50,44 @@ const abrirAppSEM = async () => {
   }
 };
 
+const reverseGeocode = async (latitude: number, longitude: number) => {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+      {
+        headers: {
+          'User-Agent': 'estacionamientoLaPlata/1.0 (irineohiriart@alu.frlp.utn.edu.ar)' // Reemplazalo con tus datos
+        }
+      }
+    );
 
-export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar }: Props) {
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.address; // Ej: {road, city, state, country, ...}
+  } catch (error) {
+    console.error('Error in reverse geocoding:', error);
+    return null;
+  }
+};
+
+  const getCurrentAndNextDay = () => {
+    const now = new Date();
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    
+    const currentDayIndex = now.getDay();
+    const currentDay = days[currentDayIndex];
+    const nextDay = days[(currentDayIndex + 1) % 7]; // Wrap around to the start of the week
+    return { currentDay, nextDay };
+  };
+
+
+export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar, posicion }: Props) {
   const [patenteSeleccionada, setPatenteSeleccionada] = React.useState('');
-
-  const [ubicacionManual, setUbicacionManual] = React.useState<Coordinates | null>(null);
+  const { currentDay, nextDay } = getCurrentAndNextDay();
+  const [direccion, setDireccion] = useState<Direccion | null>(null);
   const { location } = useLocation();
   const [horasEstacionado, setHorasEstacionado] = useState('');
 
@@ -50,11 +96,25 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
   const primary = useThemeColor({}, 'primary');
   const secondary = useThemeColor({}, 'secondary');
 
-  React.useEffect(() => {
+  const filteredHorarios = zona?.horariosPermitidos.filter(h => 
+    h.dia === currentDay || h.dia === nextDay
+  );
+
+  useEffect(() => {
     if (patentes.length > 0) {
       setPatenteSeleccionada(patentes[0].patente);
     }
   }, [patentes]);
+
+  const fetchAddress = async (posicion: Coordenada) => {
+      const result = await reverseGeocode(posicion.latitude, posicion.longitude);
+      setDireccion(result);
+      
+    };
+
+  useEffect(() => {
+    fetchAddress(posicion);
+  })
 
   const handleConfirm = () => {
     if (!patenteSeleccionada) {
@@ -62,7 +122,7 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
       return;
     }
 
-    const ubicacionFinal = ubicacionManual ?? location;
+    const ubicacionFinal = posicion ?? location;
     if (!ubicacionFinal) {
       Alert.alert('Error', 'No se pudo obtener la ubicación.');
       return;
@@ -103,22 +163,31 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
         <Text style={{ color: textColor }}>No hay patentes disponibles</Text>
       )}
 
-      {/* Seleccion entre ubicacion actual y punto en el mapa */}
       <View style={[styles.infoBox, { backgroundColor: inputBackground }]}>
         <Text style={[styles.infoTitle, { color: textColor }]}>Ubicación:</Text>
         <View style={styles.locationRow}>
           <Text style={[styles.infoText, { color: textColor, flex: 1 }]}>
-            {ubicacionManual
-              ? `${ubicacionManual.latitude.toFixed(5)}, ${ubicacionManual.longitude.toFixed(5)}`
-              : 'Posición actual'}
+            <Text>
+              {direccion ? (
+                `${direccion.road} ${direccion.house_number || ''}, ${direccion.city}`
+               ) : (
+              <Text style={[styles.infoText, { color: textColor, flex: 1 }]}>
+                 Cargando dirección...
+              </Text>
+              )}
+            </Text>
           </Text>
           <TouchableOpacity
             style={[styles.selectButton, { backgroundColor: primary }]}
-            onPress={() => {
-              console.log("Seleccionar manualmente...");
-            }}
+            onPress={() => {if (posicion) {fetchAddress(posicion)}}}
           >
-            <Text style={{ color: textColor }}>Seleccionar</Text>
+            <Text style={{ color: textColor }}>Seleccion del mapa</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.selectButton, { backgroundColor: primary, marginLeft: 10 }]}
+            onPress={() => {if (location) {fetchAddress(location)}}}
+          >
+            <Text style={{ color: textColor }}>Usar ubicación actual</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -137,21 +206,25 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
           <Text style={[styles.infoText, { color: textColor }]}> hora/s</Text>
         </View>
       </View>
-
+      
       <View style={[styles.infoBox, { backgroundColor: inputBackground }]}>
-        <Text style={[styles.infoTitle, { color: textColor }]}>Información de la zona</Text>
+        <Text style={[styles.infoTitle, { color: textColor }]}>Zona</Text>
         {zona ? (
           <View>
             <Text style={[styles.infoText, { color: textColor }]}>{zona.nombre}</Text>
             <Text style={[styles.infoText, { color: textColor }]}>Precio por hora: ${zona.precioHora.toFixed(2)}</Text>
-            {zona.horariosPermitidos.map((h: Horario) => (
-              <Text key={h.dia} style={[styles.infoText, { color: textColor }]}>
-                {h.dia}: {h.desde} - {h.hasta}
-              </Text>
-            ))}
+            {filteredHorarios && filteredHorarios.length > 0 ? (
+              filteredHorarios.map((h: Horario) => (
+                <Text key={h.dia} style={[styles.infoText, { color: textColor }]}>
+                  {h.dia}: {h.desde} - {h.hasta}
+                </Text>
+              ))
+            ) : (
+              <Text style={{ color: textColor }}>No hay horarios pagos hoy ni tampoco mañana.</Text>
+            )}
           </View>
         ) : (
-          <Text style={{ color: textColor }}>No hay zona disponible en esta ubicación</Text>
+          <Text style={{ color: textColor }}>Esta ubicación no es una zona paga.</Text>
         )}
       </View>
 
@@ -159,7 +232,7 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
       <TouchableOpacity
         style={[styles.button, { backgroundColor: zona ? primary : secondary }]}
         // disabled={!zona}
-        onPress={handleConfirm}
+        onPress={ handleConfirm}
       >
         <Text style={{ color: textColor }}>Confirmar estacionamiento</Text>
       </TouchableOpacity>

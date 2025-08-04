@@ -33,6 +33,21 @@ export class Zona {
   }
 
   contienePunto(punto: Coordenada): boolean {
-    return false;
+    let inside = false;
+    const x = punto.longitude;
+    const y = punto.latitude;
+    
+    for (let i = 0, j = this.area.length - 1; i < this.area.length; j = i++) {
+      const xi = this.area[i].longitude;
+      const yi = this.area[i].latitude;
+      const xj = this.area[j].longitude;
+      const yj = this.area[j].latitude;
+      
+      const intersect = ((yi > y) !== (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    
+    return inside;
   }
 }

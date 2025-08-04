@@ -1,5 +1,6 @@
 import ParkVehiclePopup from '@/components/popups/ParkVehiclePopup';
 import ZonaInfoPopup from '@/components/popups/ZonaInfoPopUp';
+import { usePatentes } from '@/context/PatentesContext';
 import { crearNotificacion } from '@/hooks/notificacionService';
 import { useLocation } from '@/hooks/useLocation';
 import { Auto } from '@/models/Auto';
@@ -7,7 +8,7 @@ import { Notificacion } from '@/models/Notificacion';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import MapView, { MapPressEvent, Marker, Polygon } from 'react-native-maps';
+import MapView, { LongPressEvent, MapPressEvent, Marker, Polygon } from 'react-native-maps';
 import { v4 as uuidv4 } from 'uuid';
 import CarButton from '../../components/CarButton';
 import NotificationButton from '../../components/NotificationButton';
@@ -28,10 +29,76 @@ export default function MapScreen() {
   const [mostrarZonaPopup, setMostrarZonaPopup] = useState(false);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [autos, setAutos] = useState<Auto[]>([]);
+  const [pressTimer, setPressTimer] = useState<number | null>(null);
+  const { patentes: misPatentes } = usePatentes();
 
+  const zonasAGuardar: Zona[] = [
+  new Zona(
+    'zona-1',
+    'Centro La Plata',
+    [
+      { latitude: -34.9212, longitude: -57.9544 },  // Plaza Moreno
+      { latitude: -34.9203, longitude: -57.9528 },  // Catedral NE
+      { latitude: -34.9225, longitude: -57.9515 },  // Municipalidad
+      { latitude: -34.9231, longitude: -57.9556 }   // Pasaje Dardo Rocha
+    ],
+    [
+      { dia: 'Lunes', desde: '08:00', hasta: '15:00' },
+      { dia: 'Martes', desde: '08:00', hasta: '20:00' },
+      { dia: 'Miércoles', desde: '08:00', hasta: '20:00' },
+      { dia: 'Jueves', desde: '08:00', hasta: '20:00' },
+      { dia: 'Viernes', desde: '08:00', hasta: '20:00' },
+      { dia: 'Sábado', desde: '09:00', hasta: '14:00' }
+    ],
+    50,
+    '#E74C3C'  // Rojo
+  ),
+  new Zona(
+    'zona-2',
+    'Zona Universitaria',
+    [
+      { latitude: -34.9098, longitude: -57.9405 },
+      { latitude: -34.9082, longitude: -57.9361 }, 
+      { latitude: -34.9115, longitude: -57.9350 },  
+      { latitude: -34.9136, longitude: -57.9393 }   
+    ],
+    [
+      { dia: 'Lunes', desde: '07:00', hasta: '17:00' },
+      { dia: 'Martes', desde: '07:00', hasta: '22:00' },
+      { dia: 'Miércoles', desde: '07:00', hasta: '22:00' },
+      { dia: 'Jueves', desde: '07:00', hasta: '22:00' },
+      { dia: 'Viernes', desde: '07:00', hasta: '22:00' }
+    ],
+    40,
+    '#3498DB'  // Azul
+  ),
+  new Zona(
+    'zona-3',
+    'Plaza Malvinas',
+    [
+      { latitude: -34.9335, longitude: -57.9635 },
+      { latitude: -34.9340, longitude: -57.9680 }, 
+      { latitude: -34.9375, longitude: -57.9670 }, 
+      { latitude: -34.9369, longitude: -57.9622 }  
+    ],
+    [
+      { dia: 'Lunes', desde: '06:00', hasta: '23:00' },
+      { dia: 'Martes', desde: '06:00', hasta: '23:00' },
+      { dia: 'Miércoles', desde: '06:00', hasta: '23:00' },
+      { dia: 'Jueves', desde: '06:00', hasta: '23:00' },
+      { dia: 'Viernes', desde: '06:00', hasta: '23:00' },
+      { dia: 'Sábado', desde: '07:00', hasta: '01:00' },
+      { dia: 'Domingo', desde: '07:00', hasta: '01:00' }
+    ],
+    60,
+    '#2ECC71'  // Verde
+  )
+];
   useEffect(() => {
+    guardarZonas(zonasAGuardar)
     cargarZonas();
     cargarNotificaciones();
+    cargarAutos();
   }, []);
 
   useEffect(() => {
@@ -48,7 +115,15 @@ export default function MapScreen() {
       const data = await AsyncStorage.getItem('zonasRegistradas');
       if (data) {
         const zonasGuardadas = JSON.parse(data);
-        setZonas(zonasGuardadas);
+        const zonasConvertidas = zonasGuardadas.map((zona: any) => new Zona(
+        zona.id,
+        zona.nombre,
+        zona.area,
+        zona.horariosPermitidos,
+        zona.precioHora,
+        zona.color
+      ));
+        setZonas(zonasConvertidas);
       }
     } catch (error) {
       console.error('Error cargando zonas:', error);
@@ -76,10 +151,51 @@ export default function MapScreen() {
     }
   };
 
+  const cargarAutos = async () => {
+    try {
+      const data = await AsyncStorage.getItem('autos'); // Change 'notificaciones' to 'autos'
+      if (data) {
+        const autosGuardados = JSON.parse(data);
+        setAutos(autosGuardados); // Assuming you have a state setter for autos
+      } else {
+        console.log('No autos found in storage.');
+      }
+    } catch (error) {
+      console.error('Error cargando autos:', error);
+    }
+  };
+
   const handleMapPress = (e: MapPressEvent) => {
-    if (!esAdmin) return; // Solo admin puede seleccionar puntos
     const newPoint = e.nativeEvent.coordinate;
+
+    if (esAdmin){
     setSelectedPoints((prev) => [...prev, newPoint]);
+    }
+  };
+
+  const handleLongPress = (e: LongPressEvent) => {
+    const newPoint = e.nativeEvent.coordinate;
+    setSelectedPoints([newPoint]);
+
+    const { dia, horaActual } = getCurrentDayAndTime();
+    const zona = zonas.find(zona => zona.contienePunto(newPoint));;
+    
+
+    if (zona) {
+      const horarioValido = zona.estaPermitido(dia, horaActual);
+      if (!horarioValido) {
+      Alert.alert(
+        'Fuera de horario',
+        `Esta zona es paga entre ${zona.horariosPermitidos
+          .find(h => h.dia === dia)?.desde || '--:--'} y ${zona.horariosPermitidos
+          .find(h => h.dia === dia)?.hasta || '--:--'}`
+      );
+    }
+    setZonaSeleccionada(zona);
+  } else {
+    setZonaSeleccionada(null)
+  }
+    setShowPopup(true);
   };
 
   const cancelarSeleccion = () => {
@@ -110,7 +226,42 @@ export default function MapScreen() {
     setShowCrearZonaPopup(false);
   };
 
-  // const handleEstacionar = async (
+  const getCurrentDayAndTime = () => {
+    const now = new Date();
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const dia = days[now.getDay()];
+    const hora = now.getHours().toString().padStart(2, '0');
+    const minutos = now.getMinutes().toString().padStart(2, '0');
+    return { 
+      dia, 
+      horaActual: `${hora}:${minutos}` 
+    };
+  };
+
+
+  const handleEstacionar = async (patente: string, ubicacion: Coordenada ,horas: number) => {
+    console.log(
+    "%c--- PARKING CONFIRMATION DATA ---",
+    "color: green; font-weight: bold;"
+    );
+    console.log("%c1. Vehicle:", "color: blue;", patente);
+    console.log("%c3. Duration:", "color: blue;", `${horas} hour(s)`);
+    console.log("%c5. Address:", "color: blue;", ubicacion || "Not available");
+    console.log(
+      "%c---------------------------------",
+      "color: green; font-weight: bold;"
+    );
+
+    if (usuario?.id) {
+      await crearNotificacion(
+       usuario.id.toString(),
+       'Auto Estacionado',
+       `El auto "${patente}" ha sido estacionado en "${ubicacion}" por "${horas}".`,
+       'verificacion'
+     );
+    }
+  }
+
   //   patente: string,
   //   ubicacion: Coordinates,
   //   horas: number
@@ -150,6 +301,7 @@ export default function MapScreen() {
           longitudeDelta: 0.05,
         }}
         onPress={handleMapPress}
+        onLongPress={handleLongPress}
       >
         {zonas.map((zona) => (
           <Polygon
@@ -206,8 +358,10 @@ export default function MapScreen() {
         <View style={styles.popupContainer}>
           <ParkVehiclePopup
             onClose={() => setShowPopup(false)}
-            patentes={autos}
-            onEstacionar={()=>{}}
+            patentes={misPatentes}
+            onEstacionar={handleEstacionar}
+            zona={zonaSeleccionada}
+            posicion={selectedPoints[0]}
           />
         </View>
       )}
