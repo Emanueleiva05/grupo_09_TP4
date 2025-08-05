@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  Linking,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -53,16 +54,27 @@ export default function MapScreen() {
   useEffect(() => {
     cargarZonas();
     cargarNotificaciones();
+    cargarAutos();
+    console.log(misPatentes);
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      const raw = await AsyncStorage.getItem('autosRegistrados');
-      if (raw) {
-        setAutos(JSON.parse(raw)); // array de objetos planos
+  const cargarAutos = async () => {
+    try {
+      const data = await AsyncStorage.getItem('autosRegistrados');
+      if (data) {
+        const autosGuardados = JSON.parse(data);
+        const autosConvertidos = autosGuardados.map((auto: any) => new Auto(
+          auto.patente,
+          auto.zonaId,
+          auto.posicion,
+          auto.fechaEstacionamiento
+        ));
+        setAutos(autosConvertidos);
       }
-    })();
-  }, []);
+    } catch (error) {
+      console.error('Error cargando autos:', error);
+    }
+  };
 
   const cargarZonas = async () => {
     try {
@@ -150,24 +162,64 @@ export default function MapScreen() {
     setShowCrearZonaPopup(true);
   };
 
-  const handleEstacionar = async (patente: string, ubicacion: Coordenada, horas: number)  => {
-    const auto = autos.find(a => a.patente === patente);
-    console.log(autos);
-    if (auto) {
-      auto.actualizarEstacionamiento(ubicacion, new Date(), horas);
-      await actualizarPatente(auto);
+  const handleEstacionar = async (patente: string, ubicacion: Coordenada, horas: number) => {
+    const autoExistente = autos.find(a => a.patente === patente);
+
+    const { dia, horaActual } = getCurrentDayAndTime();
+    const zona = zonas.find(zona => zona.contienePunto(ubicacion));;
+    let zonaid = '';
+    if (zona) {
+      const horarioPago = zona.estaPermitido(dia, horaActual);
+      if (horarioPago) {
+        zonaid = zona.id;
+        console.log(zonaid);
+        setZonaSeleccionada(zona);
+      }
     } else {
-      console.error(`No se ha encontrado un vehiculo de patente: ${patente}`);
+      setZonaSeleccionada(null)
+    }
+    if (autoExistente) {
+      autoExistente.actualizarEstacionamiento(ubicacion, new Date(), horas, zonaid);
+      console.log(`Vehículo ${patente} actualizado:`, autoExistente);
+    } else {
+      const nuevoAuto = new Auto(
+        patente,                     
+        zonaid,                            
+        ubicacion,                     
+        new Date(),                    
+        horas                          
+      );
+      const nuevosAutos = [...autos, nuevoAuto];
+      setAutos(nuevosAutos);
+      await AsyncStorage.setItem('autosRegistrados', JSON.stringify(nuevosAutos));
+      console.log(`Nuevo vehículo ${patente} creado:`, nuevoAuto);
     }
     if (usuario?.id) {
       await crearNotificacion(
        usuario.id.toString(),
        'Auto Estacionado',
-       `El auto ha sido estacionado en "${ubicacion.latitude.toFixed(2)}" y "${ubicacion.longitude.toFixed(2)}" por '${horas}'.`,
+       `El auto ha sido estacionado por '${horas}'.`,
        'verificacion'
      );
     }
+    if (zona) abrirAppSEM();
     setShowParkingPopup(false);
+  };
+
+  const abrirAppSEM = async () => {
+    try {
+      const urlApp = 'semla://';
+      const soporta = await Linking.canOpenURL(urlApp);
+      if (soporta) {
+        await Linking.openURL(urlApp);
+      } else {
+        await Linking.openURL(
+          'https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata'
+        );
+      }
+    } catch (error) {
+      console.error('No se pudo abrir la app del SEM:', error);
+    }
   };
 
   const manejarGuiar = async (auto: Auto) => {
@@ -229,33 +281,6 @@ export default function MapScreen() {
   function setShowPopup(arg0: boolean): void {
     throw new Error('Function not implemented.');
   }
-
-  //   patente: string,
-  //   ubicacion: Coordinates,
-  //   horas: number
-  // ) => {
-  //   // 1. Leer la lista actual
-  //   const raw = await AsyncStorage.getItem('autosRegistrados');
-  //   const lista: Auto[] = raw ? JSON.parse(raw) : [];
-
-  //   // 2. Mapear y actualizar sólo el auto con esa patente
-  //   const actualizado = lista.map(a =>
-  //     a.patente === patente
-  //       ? {
-  //         ...a,
-  //         posicion: ubicacion,
-  //         fechaEstacionamiento: new Date(),
-  //         horasEstacionado: horas,
-  //       }
-  //       : a
-  //   );
-
-  //   // 3. Guardar de vuelta en AsyncStorage
-  //   await AsyncStorage.setItem('autosRegistrados', JSON.stringify(actualizado));
-
-  //   // 4. Refrescar el estado local
-  //   setAutos(actualizado);
-  // };
 
   return (
     <View style={styles.container}>
@@ -347,9 +372,10 @@ export default function MapScreen() {
         <View style={styles.popupContainer}>
           <ParkedVehiclePopup
             onClose={() => setShowParkedPopup(false)}
-            patentes={misPatentes}
+            patentes={autos}
             onGuiar={manejarGuiar}
             onLimpiarRuta={limpiarRuta}
+            zonas={zonas}
           />
         </View>
       )}

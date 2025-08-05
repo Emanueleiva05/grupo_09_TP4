@@ -1,6 +1,7 @@
 import { usePatentes } from '@/context/PatentesContext';
 import { useLocation } from '@/hooks/useLocation';
 import { Auto } from '@/models/Auto';
+import { Zona } from '@/models/Zona';
 import { Picker } from '@react-native-picker/picker';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -12,6 +13,7 @@ type Props = {
   patentes: Auto[];
   onGuiar: (auto: Auto) => void;
   onLimpiarRuta: () => void;
+  zonas: Zona[];
 };
 
 export default function ParkedVehiclePopup({ onClose, patentes, onGuiar, onLimpiarRuta }: Props) {
@@ -19,7 +21,7 @@ export default function ParkedVehiclePopup({ onClose, patentes, onGuiar, onLimpi
   const inputBackground = useThemeColor({}, 'inputBackground');
   const buttonBackground = useThemeColor({}, 'buttonBackground');
   const infoBoxBackground = useThemeColor({}, 'infoBoxBackground');
-
+  const [zona, setZona] = useState<Zona | null>(null);
   const [patenteSeleccionada, setPatenteSeleccionada] = useState('');
   const [autoSeleccionado, setAutoSeleccionado] = useState<Auto | null>(null);
   const { actualizarPatente } = usePatentes();
@@ -37,6 +39,7 @@ export default function ParkedVehiclePopup({ onClose, patentes, onGuiar, onLimpi
       const primera = patentesFiltradas[0];
       setPatenteSeleccionada(primera.patente);
       setAutoSeleccionado(primera);
+      cargarZona();
     }
   }, [patentesFiltradas]);
 
@@ -62,6 +65,9 @@ export default function ParkedVehiclePopup({ onClose, patentes, onGuiar, onLimpi
       `Se ha reseteado la información del auto ${autoReseteado.patente}`
     );
   };
+
+  const cargarZona = async () => {
+  }
 
   return (
     <PopupCard>
@@ -96,15 +102,6 @@ export default function ParkedVehiclePopup({ onClose, patentes, onGuiar, onLimpi
           <Text style={{ color: textColor }}>No hay patentes disponibles</Text>
         </View>
       )}
-
-      <View style={[styles.infoBox, { backgroundColor: infoBoxBackground }]}>
-        <Text style={[styles.infoTitle, { color: textColor }]}>Información de la zona</Text>
-        <Text style={[styles.infoText, { color: textColor }]}>Ej.: zona celeste</Text>
-        <Text style={[styles.infoText, { color: textColor }]}>
-          Solo permitido de lunes a sábados de 9hs hasta las 20hs
-        </Text>
-        <Text style={[styles.infoText, { color: textColor }]}>Precio por hora: $100.00</Text>
-      </View>
 
       <View style={styles.buttonsRow}>
         {/* Botón Guiar */}
