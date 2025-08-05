@@ -50,70 +50,7 @@ export default function MapScreen() {
 
   const apiKey = 'TU_API_KEY_GOOGLE_MAPS';
 
-  const zonasAGuardar: Zona[] = [
-  new Zona(
-    'zona-1',
-    'Centro La Plata',
-    [
-      { latitude: -34.9212, longitude: -57.9544 },  // Plaza Moreno
-      { latitude: -34.9203, longitude: -57.9528 },  // Catedral NE
-      { latitude: -34.9225, longitude: -57.9515 },  // Municipalidad
-      { latitude: -34.9231, longitude: -57.9556 }   // Pasaje Dardo Rocha
-    ],
-    [
-      { dia: 'Lunes', desde: '08:00', hasta: '15:00' },
-      { dia: 'Martes', desde: '08:00', hasta: '20:00' },
-      { dia: 'Miércoles', desde: '08:00', hasta: '20:00' },
-      { dia: 'Jueves', desde: '08:00', hasta: '20:00' },
-      { dia: 'Viernes', desde: '08:00', hasta: '20:00' },
-      { dia: 'Sábado', desde: '09:00', hasta: '14:00' }
-    ],
-    50,
-    '#E74C3C'  // Rojo
-  ),
-  new Zona(
-    'zona-2',
-    'Zona Universitaria',
-    [
-      { latitude: -34.9098, longitude: -57.9405 },
-      { latitude: -34.9082, longitude: -57.9361 }, 
-      { latitude: -34.9115, longitude: -57.9350 },  
-      { latitude: -34.9136, longitude: -57.9393 }   
-    ],
-    [
-      { dia: 'Lunes', desde: '07:00', hasta: '17:00' },
-      { dia: 'Martes', desde: '07:00', hasta: '22:00' },
-      { dia: 'Miércoles', desde: '07:00', hasta: '22:00' },
-      { dia: 'Jueves', desde: '07:00', hasta: '22:00' },
-      { dia: 'Viernes', desde: '07:00', hasta: '22:00' }
-    ],
-    40,
-    '#3498DB'  // Azul
-  ),
-  new Zona(
-    'zona-3',
-    'Plaza Malvinas',
-    [
-      { latitude: -34.9335, longitude: -57.9635 },
-      { latitude: -34.9340, longitude: -57.9680 }, 
-      { latitude: -34.9375, longitude: -57.9670 }, 
-      { latitude: -34.9369, longitude: -57.9622 }  
-    ],
-    [
-      { dia: 'Lunes', desde: '06:00', hasta: '23:00' },
-      { dia: 'Martes', desde: '06:00', hasta: '23:00' },
-      { dia: 'Miércoles', desde: '06:00', hasta: '23:00' },
-      { dia: 'Jueves', desde: '06:00', hasta: '23:00' },
-      { dia: 'Viernes', desde: '06:00', hasta: '23:00' },
-      { dia: 'Sábado', desde: '07:00', hasta: '01:00' },
-      { dia: 'Domingo', desde: '07:00', hasta: '01:00' }
-    ],
-    60,
-    '#2ECC71'  // Verde
-  )
-];
   useEffect(() => {
-    guardarZonas(zonasAGuardar)
     cargarZonas();
     cargarNotificaciones();
   }, []);
@@ -226,7 +163,7 @@ export default function MapScreen() {
       await crearNotificacion(
        usuario.id.toString(),
        'Auto Estacionado',
-       `El auto ha sido estacionado en "${ubicacion.latitude}" y "${ubicacion.longitude}" por '${horas}'.`,
+       `El auto ha sido estacionado en "${ubicacion.latitude.toFixed(2)}" y "${ubicacion.longitude.toFixed(2)}" por '${horas}'.`,
        'verificacion'
      );
     }
