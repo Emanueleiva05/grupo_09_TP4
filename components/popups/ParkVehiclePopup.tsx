@@ -36,14 +36,14 @@ interface Direccion {
 
 const abrirAppSEM = async () => {
   try {
-    // Intento de abrir la app directamente (si se conoce el scheme)
     const urlApp = 'semla://';
     const soporta = await Linking.canOpenURL(urlApp);
     if (soporta) {
       await Linking.openURL(urlApp);
     } else {
-      // Si no está instalada, abrimos el Play Store (Android)
-      await Linking.openURL('https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata');
+      await Linking.openURL(
+        'https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata'
+      );
     }
   } catch (error) {
     console.error('No se pudo abrir la app del SEM:', error);
@@ -90,6 +90,12 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
   const [direccion, setDireccion] = useState<Direccion | null>(null);
   const { location } = useLocation();
   const [horasEstacionado, setHorasEstacionado] = useState('');
+
+  const patentesFiltradas = patentes.filter(
+    p => p.posicion.latitude === 0 && p.posicion.longitude === 0
+  );
+  const patentesStrings = patentesFiltradas.map(p => p.patente);
+
 
   const textColor = useThemeColor({}, 'text');
   const inputBackground = useThemeColor({}, 'inputBackground');
@@ -147,20 +153,32 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
         </TouchableOpacity>
       </View>
 
-      {patentes.length > 0 ? (
+      {patentesStrings.length > 0 ? (
         <View style={[styles.pickerWrapper, { backgroundColor: inputBackground }]}>
           <Picker
             selectedValue={patenteSeleccionada}
-            onValueChange={(itemValue) => setPatenteSeleccionada(itemValue)}
-            dropdownIconColor={secondary}
+            onValueChange={(itemValue) => {
+              setPatenteSeleccionada(itemValue);
+              const autoSeleccionado = patentesFiltradas.find(p => p.patente === itemValue);
+              console.log('Picker cambió a patente:', itemValue);
+              console.log('Objeto auto correspondiente:', autoSeleccionado);
+            }}
+            dropdownIconColor={textColor}
+            style={{ color: textColor }}
           >
-            {patentes.map((auto) => (
-              <Picker.Item key={auto.patente} label={auto.patente} value={auto.patente} color={textColor} />
+            {patentesFiltradas.map(pat => (
+              <Picker.Item
+                key={pat.patente}
+                label={pat.patente}
+                value={pat.patente}
+              />
             ))}
           </Picker>
         </View>
       ) : (
-        <Text style={{ color: textColor }}>No hay patentes disponibles</Text>
+        <View style={[styles.pickerWrapper, { backgroundColor: inputBackground, padding: 8 }]}>
+          <Text style={{ color: textColor }}>No hay patentes disponibles</Text>
+        </View>
       )}
 
       <View style={[styles.infoBox, { backgroundColor: inputBackground }]}>
@@ -193,13 +211,15 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
       </View>
 
       <View style={[styles.infoBox, { backgroundColor: inputBackground }]}>
-        <Text style={[styles.infoTitle, { color: textColor }]}>¿Cuanto tiempo va a estar el auto estacionado?</Text>
+        <Text style={[styles.infoTitle, { color: textColor }]}>
+          ¿Cuánto tiempo va a estar el auto estacionado?
+        </Text>
         <View style={styles.horasRow}>
           <ThemedInput
             style={{ borderWidth: 0 }}
             value={horasEstacionado}
             onChangeText={setHorasEstacionado}
-            placeholder='Ej.: 1'
+            placeholder="Ej.: 1"
             keyboardType="numeric"
             inputMode="numeric"
           />
@@ -228,7 +248,6 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
         )}
       </View>
 
-
       <TouchableOpacity
         style={[styles.button, { backgroundColor: zona ? primary : secondary }]}
         // disabled={!zona}
@@ -242,11 +261,15 @@ export default function ParkVehiclePopup({ onClose, patentes, zona, onEstacionar
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   title: { fontSize: 16, marginBottom: 8 },
   closeButton: { padding: 4 },
   closeButtonText: { fontWeight: 'bold', fontSize: 16 },
-
   infoBox: {
     borderRadius: 8,
     padding: 8,
